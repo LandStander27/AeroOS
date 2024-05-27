@@ -32,10 +32,13 @@ pub fn has_inited() bool {
 pub fn init_gop() !void {
 	const boot_services = uefi.system_table.boot_services.?;
 	log.new_task("GraphicsOutput");
+	errdefer log.error_task();
+	// try @import("time.zig").sleepms(350);
 	if (boot_services.locateProtocol(&uefi.protocol.GraphicsOutput.guid, null, @ptrCast(&gop)) != uefi.Status.Success) {
 		return error.NoGOPFound;
 	}
 	log.finish_task();
+	// try @import("time.zig").sleepms(350);
 	inited = true;
 }
 

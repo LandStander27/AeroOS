@@ -92,6 +92,14 @@ pub fn getkey() !?Key {
 	};
 }
 
+pub fn right(amount: i64) void {
+	_ = con_out.setCursorPosition(@intCast(con_out.mode.cursor_column+amount), @intCast(con_out.mode.cursor_row));
+}
+
+pub fn down(amount: i64) void {
+	_ = con_out.setCursorPosition(@intCast(con_out.mode.cursor_column), @intCast(con_out.mode.cursor_row+amount));
+}
+
 /// Gets characters until newline.
 /// Caller owns and must free memory.
 pub fn getline(alloc: heap.Allocator) ![]u8 {

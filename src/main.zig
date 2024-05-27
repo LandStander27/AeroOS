@@ -14,12 +14,13 @@ const io = @import("io.zig");
 // const getline = io.getline;
 
 const graphics = @import("graphics.zig");
-
 const fb = @import("fb.zig");
 
 const fs = @import("fs.zig");
 
 const log = @import("log.zig");
+
+const rng = @import("rand.zig");
 
 fn digit_amount(n: u64) u64 {
 	var amount: u64 = 0;
@@ -126,6 +127,15 @@ const Request = enum {
 fn entry() !Request {
 
 	const alloc = heap.Allocator.init();
+	log.new_task("InitHeap");
+	for (0..100) |_| {
+		errdefer log.error_task();
+		const a = try alloc.alloc(u8, 1);
+		alloc.free(a);
+		try time.sleepms(10);
+	}
+	log.finish_task();
+	// try time.sleepms(250);
 
 	try graphics.init_gop();
 	const resolutions = try graphics.get_resolutions(alloc);
@@ -151,18 +161,31 @@ fn entry() !Request {
 		try time.sleepms(1500);
 		try graphics.set_videomode(resolutions[default.?-1]);
 	} else {
-		const res = try io.getline(alloc);
-		defer alloc.free(res);
-		const n = try std.fmt.parseInt(usize, res, 10);
+		while (!graphics.has_inited()) {
+			const res = try io.getline(alloc);
+			defer alloc.free(res);
+			const n = std.fmt.parseInt(usize, res, 10) catch |e| {
+				if (e == error.InvalidCharacter) {
+					try io.println("Not a number", .{});
+					continue;
+				} else {
+					return e;
+				}
+			};
 
-		try graphics.set_videomode(resolutions[n-1]);
+			try graphics.set_videomode(resolutions[n-1]);
 
-		try io.println("Set to {d} x {d}", .{ resolutions[n-1].width, resolutions[n-1].height });
+			try io.println("Set to {d} x {d}", .{ resolutions[n-1].width, resolutions[n-1].height });
+		}
 	}
 
 	alloc.free(resolutions);
+	try rng.init();
+	log.new_task("InitHeap");
+	log.finish_task();
 	log.new_task("GraphicsOutput");
 	log.finish_task();
+	// try sleepms(200);
 
 	try fs.init();
 	try fs.mount_root();
@@ -175,9 +198,9 @@ fn entry() !Request {
 	while (true) {
 
 		fb.set_color(fb.Cyan);
-		try fb.print("{s} ", .{current_path.items});
-		fb.set_color(fb.White);
 		try fb.print("> ", .{});
+		fb.set_color(fb.White);
+		// try fb.print("> ", .{});
 		const inp = try fb.getline(alloc);
 		defer alloc.free(inp);
 
@@ -223,9 +246,8 @@ fn entry() !Request {
 				try fb.print("{s} ", .{s});
 			}
 			try fb.print("\n", .{});
-		} else if (std.mem.eql(u8, args[0], "ls")) {
-			const dir = try fs.open_dir(current_path.items);
-			try dir.close();
+		} else if (std.mem.eql(u8, args[0], "random")) {
+			try fb.println("Number: {d}", .{ try rng.random(5, 10) });
 		} else {
 			try fb.println("Unknown command '{s}'", .{args[0]});
 		}

@@ -55,6 +55,18 @@ var current_color = White;
 
 var cursor_pos = [_]u64{0, 0};
 
+pub fn down(amount: i64) void {
+	var a: i64 = @intCast(cursor_pos[1]);
+	a += amount;
+	cursor_pos[1] = @intCast(a);
+}
+
+pub fn right(amount: i64) void {
+	var a: i64 = @intCast(cursor_pos[0]);
+	a += amount;
+	cursor_pos[0] = @intCast(a);
+}
+
 fn to_coord(x: u64, y: u64) [2]u64 {
 	return [_]u64{@intCast(x*(font_width+font_padding)), @intCast(y*(font_height+font_padding)+2)};
 }

@@ -19,7 +19,7 @@ build:
 	mkisofs -o boot.iso -R -J -v -d -N -no-emul-boot -eltorito-platform efi -eltorito-boot EFI/BOOT/boot.img -V "BOOT" -A "Boot" bin
 
 run:
-	qemu-system-x86_64 -bios /usr/share/ovmf/x64/OVMF.fd -cdrom boot.iso -m 4G
+	qemu-system-x86_64 -bios /usr/share/ovmf/x64/OVMF.fd -cdrom boot.iso -m 4G -device virtio-rng-pci
 
 clean:
 	rm -rf bin
