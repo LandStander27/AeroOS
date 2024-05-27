@@ -25,6 +25,15 @@ pub fn init() !void {
 }
 
 pub fn random(low: u64, high: u64) !u64 {
+
+	if (low == high) {
+		return low;
+	}
+
+	if (low > high) {
+		return error.InvalidRange;
+	}
+
 	var value: u64 = 0;
 	if (rng.?.getRNG(null, @sizeOf(u64), @ptrCast(&value)) != uefi.Status.Success) {
 		return error.CouldNotGenerateNumber;

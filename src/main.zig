@@ -225,8 +225,22 @@ fn entry() !Request {
 
 		if (std.mem.eql(u8, args[0], "exit")) {
 			break;
+		} else if (std.mem.eql(u8, args[0], "help")) {
+			const str =
+				\\exit                  Exit the shell
+				\\clear                 Clear the screen
+				\\shutdown              Shut down
+				\\reboot                Reboot
+				\\leaks                 Show heap allocations
+				\\echo <str>            Print <str>
+				\\random <min> <max>    Random number between <min> and <max>
+			;
+			try fb.println("\n{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "clear")) {
-			try fb.clear();
+			fb.clear() catch |e| {
+				try fb.println("Error: {s}", .{@errorName(e)});
+				continue;
+			};
 		} else if (std.mem.eql(u8, args[0], "shutdown")) {
 			try fb.println("Shutting down...", .{});
 			return Request.Shutdown;
@@ -236,7 +250,7 @@ fn entry() !Request {
 			return Request.Reboot;
 			// uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetCold, uefi.Status.Success, 0, null);
 		} else if (std.mem.eql(u8, args[0], "leaks")) {
-			try fb.println("Currently allocated on heap: {d}", .{heap.amount});
+			try fb.println("Objects currently allocated on heap: {d}", .{heap.amount});
 		} else if (std.mem.eql(u8, args[0], "echo")) {
 			if (args.len == 1) {
 				try fb.print("\n", .{});
@@ -247,7 +261,23 @@ fn entry() !Request {
 			}
 			try fb.print("\n", .{});
 		} else if (std.mem.eql(u8, args[0], "random")) {
-			try fb.println("Number: {d}", .{ try rng.random(5, 10) });
+			if (args.len == 1) {
+				try fb.println("{d}", .{ try rng.random(0, std.math.maxInt(u64)) });
+			} else if (args.len == 3) {
+				const num: ?u64 = rng.random(std.fmt.parseInt(u64, args[1], 10) catch 0, std.fmt.parseInt(u64, args[2], 10) catch 0) catch |e| blk: {
+					if (e == error.InvalidRange) {
+						try fb.println("Invalid range", .{});
+					} else {
+						try fb.println("Error: {s}", .{@errorName(e)});
+					}
+					break :blk null;
+				};
+				if (num != null) {
+					try fb.println("{d}", .{ num.? });
+				}
+			} else {
+				try fb.println("Usage: random <min> <max>", .{});
+			}
 		} else {
 			try fb.println("Unknown command '{s}'", .{args[0]});
 		}
@@ -308,7 +338,7 @@ pub fn main() void {
 	};
 
 	if (heap.amount != 0) {
-		io.println("MEMORY LEAKS: {d}", .{heap.amount}) catch unreachable;
+		io.println("MEMORY LEAKS DETECTED: {d}", .{heap.amount}) catch unreachable;
 		enter_loop();
 	}
 
