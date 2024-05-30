@@ -142,6 +142,7 @@ fn entry() !Request {
 	const resolutions = try graphics.get_resolutions(alloc);
 
 	var default: ?usize = null;
+	default = null;
 
 	for (resolutions, 1..) |res, i| {
 		try io.print("{d}:", .{i});
@@ -159,15 +160,17 @@ fn entry() !Request {
 	if (default != null) {
 		try io.println("{d}", .{default.?});
 		try io.println("Set to {d} x {d}", .{ resolutions[default.?-1].width, resolutions[default.?-1].height });
-		try time.sleepms(1500);
+		try time.sleepms(1000);
 		try graphics.set_videomode(resolutions[default.?-1]);
 	} else {
-		while (!graphics.has_inited()) {
+		var done = false;
+		while (!done) {
 			const res = try io.getline(alloc);
 			defer alloc.free(res);
 			const n = std.fmt.parseInt(usize, res, 10) catch |e| {
 				if (e == error.InvalidCharacter) {
 					try io.println("Not a number", .{});
+					try io.print("Resolution ? ", .{});
 					continue;
 				} else {
 					return e;
@@ -175,6 +178,7 @@ fn entry() !Request {
 			};
 
 			try graphics.set_videomode(resolutions[n-1]);
+			done = true;
 
 			try io.println("Set to {d} x {d}", .{ resolutions[n-1].width, resolutions[n-1].height });
 		}
