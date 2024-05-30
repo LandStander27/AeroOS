@@ -39,6 +39,14 @@ pub fn ArrayList(comptime T: type) type {
 			self.allocator.free(self.data);
 		}
 
+		pub fn remove(self: *Self, index: usize) void {
+			for (index..self.len-1) |i| {
+				self.data[i] = self.data[i+1];
+			}
+			self.items = self.data[0..self.len - 1];
+			self.len -= 1;
+		}
+
 		pub fn append(self: *Self, item: T) !void {
 			if (self.len >= self.capacity) {
 				self.data = try self.allocator.realloc(T, self.items, self.capacity * 2);

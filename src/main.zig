@@ -15,6 +15,7 @@ const io = @import("io.zig");
 
 const graphics = @import("graphics.zig");
 const fb = @import("fb.zig");
+const pointer = @import("mouse.zig");
 
 const fs = @import("fs.zig");
 
@@ -137,7 +138,7 @@ fn entry() !Request {
 	log.finish_task();
 	// try time.sleepms(250);
 
-	try graphics.init_gop();
+	try graphics.init();
 	const resolutions = try graphics.get_resolutions(alloc);
 
 	var default: ?usize = null;
@@ -187,6 +188,8 @@ fn entry() !Request {
 	log.finish_task();
 	// try sleepms(200);
 
+	try pointer.init();
+
 	try fs.init();
 	try fs.mount_root();
 
@@ -195,7 +198,7 @@ fn entry() !Request {
 
 	try current_path.append('/');
 
-	while (true) {
+	outer: while (true) {
 
 		fb.set_color(fb.Cyan);
 		try fb.print("> ", .{});
@@ -317,6 +320,29 @@ fn entry() !Request {
 				try fb.print(" \n", .{});
 			}
 
+		} else if (std.mem.eql(u8, args[0], "snake")) {
+			try fb.println("Starting", .{});
+			const buf = try graphics.save_state(alloc);
+			defer alloc.free(buf);
+
+			@import("snake.zig").start(alloc) catch |e| {
+				try fb.println("Error: {s}", .{@errorName(e)});
+			};
+
+			try graphics.load_state(buf);
+		} else if (std.mem.eql(u8, args[0], "getkey")) {
+
+			var key: ?io.Key = null;
+			try fb.println("Waiting for keypress...", .{});
+
+			while (key == null) {
+				key = io.getkey() catch |e| {
+					try fb.println("Error: {s}", .{@errorName(e)});
+					continue :outer;
+				};
+			}
+
+			try fb.println("scancode: {d}\nchar: '{c}'", .{ key.?.scancode, key.?.unicode.convert() });
 		} else {
 			try fb.println("Unknown command '{s}'", .{args[0]});
 		}

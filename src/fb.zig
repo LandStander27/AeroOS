@@ -123,6 +123,10 @@ pub fn puts(str: []const u8) !void {
 			}
 			try put_cursor();
 			continue;
+		} else if (c == '\r') {
+			try putchar(' ');
+			cursor_pos[0] = 0;
+			continue;
 		}
 		try putchar(c);
 		if (cursor_pos[0] >= max_column) {
