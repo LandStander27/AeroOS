@@ -364,6 +364,12 @@ fn entry() !Request {
 				try fb.println("scancode: {d} char: '{c}'", .{ key.?.scancode, key.?.unicode.convert() });
 				key = null;
 			}
+		} else if (std.mem.eql(u8, args[0], "panic")) {
+			if (args.len == 1) {
+				@panic("User requested panic");
+			} else {
+				@panic(args[1]);
+			}
 		} else {
 			try fb.println("Unknown command '{s}'", .{args[0]});
 		}
@@ -375,20 +381,86 @@ fn entry() !Request {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-	io.puts("KERNEL PANIC: ");
-	io.puts(msg);
-	io.puts("\n");
+	if (graphics.has_inited()) {
+		const res: bool = blk: {
+			fb.set_color(fb.Red);
+			fb.puts("KERNEL PANIC: ") catch break :blk true;
+			fb.puts(msg) catch break :blk true;
+			fb.puts("\n") catch break :blk true;
+			fb.set_color(fb.White);
+			break :blk false;
+		};
+		if (res) {
+			io.puts("KERNEL PANIC: ");
+			io.puts(msg);
+			io.puts("\n");
+		}
+	} else {
+		io.puts("KERNEL PANIC: ");
+		io.puts(msg);
+		io.puts("\n");
+	}
+
+	enter_loop();
+}
+
+fn enter_loop() noreturn {
+	print_either("KERNEL LOOP");
+
+	exit_services() catch {
+		print_either("EXIT SERVICES FAILED");
+
+		while (true) {
+			sleepms(5000) catch {};
+		}
+
+	};
+
 	while (true) {
+		// if (graphics.has_inited()) {
+		// 	fb.puts("TICK\n") catch {};
+		// } else {
+		// 	_ = uefi.system_table.con_out.?.outputString(&[_:0]u16{ 'T', 'I', 'C', 'K', '\r', '\n' });
+		// }
+		// sleepms(5000) catch {};
 		asm volatile ("hlt");
 	}
 }
 
-fn enter_loop() noreturn {
-	io.println("KERNEL LOOP", .{}) catch {};
+fn exit_services() !void {
+	var memory_map: [*]uefi.tables.MemoryDescriptor = undefined;
+	var memory_map_size: usize = 0;
+	var memory_map_key: usize = undefined;
+	var descriptor_size: usize = undefined;
+	var descriptor_version: u32 = undefined;
+	while (uefi.Status.BufferTooSmall == uefi.system_table.boot_services.?.getMemoryMap(&memory_map_size, memory_map, &memory_map_key, &descriptor_size, &descriptor_version)) {
+		if (uefi.Status.Success != uefi.system_table.boot_services.?.allocatePool(uefi.tables.MemoryType.BootServicesData, memory_map_size, @ptrCast(&memory_map))) {
+			return error.CouldNotAllocateMemoryMap;
+		}
+	}
 
-	while (true) {
-		_ = uefi.system_table.con_out.?.outputString(&[_:0]u16{ 'T', 'I', 'C', 'K', '\r', '\n' });
-		sleepms(5000) catch {};
+	if (uefi.system_table.boot_services.?.exitBootServices(uefi.handle, memory_map_key) != uefi.Status.Success) {
+		return error.CouldNotExitBootServices;
+	}
+}
+
+fn printf_either(comptime format: []const u8, args: anytype) !void {
+	if (graphics.has_inited()) {
+		fb.println(format, args) catch {
+			try io.println(format, args);
+		};
+	} else {
+		try io.println(format, args);
+	}
+}
+
+fn print_either(comptime format: []const u8) void {
+	if (graphics.has_inited()) {
+		fb.puts(format ++ "\n") catch {
+			io.puts(format ++ "\n");
+		};
+	} else {
+		io.puts(format ++ "\n");
 	}
 }
 
@@ -415,21 +487,21 @@ pub fn main() void {
 
 	const res = uefi.system_table.boot_services.?.setWatchdogTimer(0, 0, 0, null);
 	if (res != uefi.Status.Success) {
-		io.println("COULD NOT SET WATCHDOG: {any}", .{res}) catch unreachable;
+		printf_either("COULD NOT SET WATCHDOG: {any}", .{res}) catch {};
 	}
 
 	const req = entry() catch |e| {
-		io.println("KERNEL PANIC: {any}", .{e}) catch unreachable;
+		printf_either("KERNEL PANIC: {any}", .{e}) catch {};
 		enter_loop();
 	};
 
 	if (heap.amount != 0) {
-		io.println("MEMORY LEAKS DETECTED: {d}", .{heap.amount}) catch unreachable;
+		printf_either("MEMORY LEAKS DETECTED: {d}", .{heap.amount}) catch {};
 		enter_loop();
 	}
 
 	fs.umount_root() catch |e| {
-		io.println("KERNEL PANIC: {any}", .{e}) catch unreachable;
+		printf_either("KERNEL PANIC: {any}", .{e}) catch {};
 		enter_loop();
 	};
 	sleepms(1000) catch unreachable;
