@@ -70,6 +70,10 @@ pub fn draw_rectangle(x: u64, y: u64, width: u64, height: u64, color: Color) !vo
 	}
 }
 
+pub fn clear() !void {
+	try draw_rectangle(0, 0, gop.?.mode.info.horizontal_resolution, gop.?.mode.info.vertical_resolution, Color{ .r = 0, .g = 0, .b = 0 });
+}
+
 pub fn save_state(alloc: heap.Allocator) ![]u32 {
 	var buf = try alloc.alloc(u32, gop.?.mode.info.horizontal_resolution * gop.?.mode.info.vertical_resolution);
 	errdefer alloc.free(buf);

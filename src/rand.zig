@@ -9,9 +9,28 @@ pub fn has_inited() bool {
 	return inited;
 }
 
+pub const RNGMethod = enum {
+	Hardware,
+	Software,
+	NonRandom,
+};
+
+pub fn get_mode() RNGMethod {
+
+	if (rng == null) {
+		if (original_backup_seed == 0) {
+			return .NonRandom;
+		}
+		return .Software;
+	}
+
+	return .Hardware;
+
+}
+
 pub fn init() !void {
 
-	log.new_task("RNG");
+	log.new_task("HardwareRNG");
 	errdefer log.error_task();
 	const boot_services = uefi.system_table.boot_services.?;
 
@@ -19,11 +38,11 @@ pub fn init() !void {
 		// return error.NoRNGFound;
 		rng = null;
 		log.error_task();
-		log.new_task("BackupSimulatedRNG");
+		log.new_task("SoftwareRNG");
 
 		const t = @import("time.zig").Time.now() catch blk: {
 			log.error_task();
-			log.new_task("BackupSimpleRNG");
+			log.new_task("NonRandomRNG");
 			break :blk null;
 		};
 
@@ -31,6 +50,7 @@ pub fn init() !void {
 	}
 	log.finish_task();
 
+	original_backup_seed = backup_seed;
 	inited = true;
 
 }
@@ -57,6 +77,7 @@ pub fn random(low: u64, high: u64) !u64 {
 	return (value % (high - low)) + low;
 }
 
+var original_backup_seed: u64 = 0;
 var backup_seed: u64 = 0;
 
 fn backup_rng() u64 {

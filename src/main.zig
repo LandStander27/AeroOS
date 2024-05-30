@@ -181,6 +181,9 @@ fn entry() !Request {
 	}
 
 	alloc.free(resolutions);
+
+	try graphics.clear();
+
 	try rng.init();
 	log.new_task("InitHeap");
 	log.finish_task();
@@ -197,6 +200,10 @@ fn entry() !Request {
 	defer current_path.deinit();
 
 	try current_path.append('/');
+
+	if (rng.get_mode() == .NonRandom) {
+		try fb.println("Warning! Firmware does not support RNG.\nAll random numbers generated will not be random.", .{});
+	}
 
 	outer: while (true) {
 
