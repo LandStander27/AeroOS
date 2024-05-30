@@ -11,12 +11,23 @@ pub fn has_inited() bool {
 
 pub fn init() !void {
 
-	log.new_task("Rng");
+	log.new_task("RNG");
 	errdefer log.error_task();
 	const boot_services = uefi.system_table.boot_services.?;
 
 	if (boot_services.locateProtocol(&uefi.protocol.Rng.guid, null, @ptrCast(&rng)) != uefi.Status.Success) {
-		return error.NoRNGFound;
+		// return error.NoRNGFound;
+		rng = null;
+		log.error_task();
+		log.new_task("BackupSimulatedRNG");
+
+		const t = @import("time.zig").Time.now() catch blk: {
+			log.error_task();
+			log.new_task("BackupSimpleRNG");
+			break :blk null;
+		};
+
+		backup_seed = if (t != null) t.?.unix() else 0;
 	}
 	log.finish_task();
 
@@ -35,9 +46,20 @@ pub fn random(low: u64, high: u64) !u64 {
 	}
 
 	var value: u64 = 0;
-	if (rng.?.getRNG(null, @sizeOf(u64), @ptrCast(&value)) != uefi.Status.Success) {
-		return error.CouldNotGenerateNumber;
+	if (rng != null) {
+		if (rng.?.getRNG(null, @sizeOf(u64), @ptrCast(&value)) != uefi.Status.Success) {
+			return error.CouldNotGenerateNumber;
+		}
+	} else {
+		value = backup_rng();
 	}
 
 	return (value % (high - low)) + low;
+}
+
+var backup_seed: u64 = 0;
+
+fn backup_rng() u64 {
+	backup_seed = (1103515245 * backup_seed + 12345) % std.math.pow(u64, 2, 31);
+	return backup_seed;
 }

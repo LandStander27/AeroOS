@@ -18,9 +18,9 @@ pub fn new_task(str: []const u8) void {
 		io.print("{s} ... Running", .{str}) catch {};
 		io.right(-7);
 	}
-	var delay: u64 = 100;
+	var delay: u64 = 250;
 	if (rng.has_inited()) {
-		delay = rng.random(100, 500) catch 100;
+		delay = rng.random(100, 500) catch 250;
 	}
 	sleepms(delay) catch {};
 }

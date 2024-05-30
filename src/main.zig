@@ -234,8 +234,10 @@ fn entry() !Request {
 				\\leaks                 Show heap allocations
 				\\echo <str>            Print <str>
 				\\random <min> <max>    Random number between <min> and <max>
+				\\time                  Print unix time
+				\\date                  Print date
 			;
-			try fb.println("\n{s}\n", .{str});
+			try fb.println("{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "clear")) {
 			fb.clear() catch |e| {
 				try fb.println("Error: {s}", .{@errorName(e)});
@@ -278,6 +280,43 @@ fn entry() !Request {
 			} else {
 				try fb.println("Usage: random <min> <max>", .{});
 			}
+		} else if (std.mem.eql(u8, args[0], "time")) {
+			const t: ?time.Time = time.Time.timezone_now() catch |e| blk: {
+				try fb.println("Error: {s}", .{@errorName(e)});
+				break :blk null;
+			};
+
+			if (t != null) {
+				try fb.println("{d}", .{ t.?.unix() });
+			}
+
+		} else if (std.mem.eql(u8, args[0], "date")) {
+			const t: ?time.Time = time.Time.timezone_now() catch |e| blk: {
+				try fb.println("Error: {s}", .{@errorName(e)});
+				break :blk null;
+			};
+
+			if (t != null) {
+				for ([_]u16{ @intCast(t.?.month), @intCast(t.?.day), t.?.year }) |i| {
+					if (i < 10) {
+						try fb.print("0{d}/", .{i});
+						continue;
+					}
+					try fb.print("{d}/", .{i});
+				}
+				fb.right(-1);
+				try fb.print(" ", .{});
+				for ([_]u8{ t.?.hour, t.?.minute, t.?.second }) |i| {
+					if (i < 10) {
+						try fb.print("0{d}:", .{i});
+						continue;
+					}
+					try fb.print("{d}:", .{i});
+				}
+				fb.right(-1);
+				try fb.print(" \n", .{});
+			}
+
 		} else {
 			try fb.println("Unknown command '{s}'", .{args[0]});
 		}
