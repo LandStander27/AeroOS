@@ -231,6 +231,7 @@ fn entry() !Request {
 		} else if (std.mem.eql(u8, args[0], "help")) {
 			const str =
 				\\exit                  Exit the shell
+				\\help                  Show this help
 				\\clear                 Clear the screen
 				\\shutdown              Shut down
 				\\reboot                Reboot
@@ -239,6 +240,8 @@ fn entry() !Request {
 				\\random <min> <max>    Random number between <min> and <max>
 				\\time                  Print unix time
 				\\date                  Print date
+				\\snake                 Start a builtin snake game
+				\\getkey                Print keypress info
 			;
 			try fb.println("{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "clear")) {
