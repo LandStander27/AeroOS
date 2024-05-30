@@ -141,8 +141,8 @@ pub fn puts(str: []const u8) !void {
 		} else {
 			cursor_pos[0] += 1;
 		}
-		try put_cursor();
 	}
+	try put_cursor();
 }
 
 pub fn clear() !void {

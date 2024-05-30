@@ -347,16 +347,23 @@ fn entry() !Request {
 		} else if (std.mem.eql(u8, args[0], "getkey")) {
 
 			var key: ?io.Key = null;
-			try fb.println("Waiting for keypress...", .{});
+			try fb.println("Waiting for keypress... ^C to stop", .{});
 
-			while (key == null) {
-				key = io.getkey() catch |e| {
-					try fb.println("Error: {s}", .{@errorName(e)});
-					continue :outer;
-				};
+			while (true) {
+				while (key == null) {
+					key = io.getkey() catch |e| {
+						try fb.println("Error: {s}", .{@errorName(e)});
+						continue :outer;
+					};
+				}
+
+				if (key.?.ctrl and key.?.unicode.convert() == 'c') {
+					break;
+				}
+
+				try fb.println("scancode: {d} char: '{c}'", .{ key.?.scancode, key.?.unicode.convert() });
+				key = null;
 			}
-
-			try fb.println("scancode: {d}\nchar: '{c}'", .{ key.?.scancode, key.?.unicode.convert() });
 		} else {
 			try fb.println("Unknown command '{s}'", .{args[0]});
 		}
