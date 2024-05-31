@@ -18,9 +18,9 @@ pub fn new_task(str: []const u8) void {
 		io.print("{s} ... Running", .{str}) catch {};
 		io.right(-7);
 	}
-	var delay: u64 = 250;
+	var delay: u64 = 75;
 	if (rng.has_inited()) {
-		delay = rng.random(100, 500) catch 250;
+		delay = rng.random(50, 100) catch 75;
 	}
 	sleepms(delay) catch {};
 }
@@ -33,9 +33,9 @@ pub fn finish_task() void {
 	} else {
 		io.println("Success   ", .{}) catch {};
 	}
-	var delay: u64 = 100;
+	var delay: u64 = 75;
 	if (rng.has_inited()) {
-		delay = rng.random(100, 500) catch 100;
+		delay = rng.random(50, 100) catch 75;
 	}
 	sleepms(delay) catch {};
 }

@@ -23,6 +23,21 @@ const Square = struct {
 
 };
 
+const Key = enum(u16) {
+	Escape = 23,
+	Down = 2,
+	Up = 1,
+	Left = 4,
+	Right = 3,
+};
+
+const Direction = enum {
+	Up,
+	Down,
+	Left,
+	Right,
+};
+
 pub fn start(alloc: heap.Allocator) !void {
 
 	var buffer = try graphics.Framebuffer.init(alloc);
@@ -37,6 +52,8 @@ pub fn start(alloc: heap.Allocator) !void {
 	try snake.append(Square{ .x = 120, .y = 100 });
 	try snake.append(Square{ .x = 120, .y = 120 });
 
+	var current_direction = Direction.Right;
+
 	var running = true;
 
 	while (running) {
@@ -44,7 +61,11 @@ pub fn start(alloc: heap.Allocator) !void {
 		const key = try io.getkey();
 		if (key) |k| {
 			switch (k.scancode) {
-				23 => running = false,
+				@intFromEnum(Key.Escape) => running = false,
+				@intFromEnum(Key.Down) => current_direction = if (current_direction != Direction.Up) Direction.Down else current_direction,
+				@intFromEnum(Key.Up) => current_direction = if (current_direction != Direction.Down) Direction.Up else current_direction,
+				@intFromEnum(Key.Left) => current_direction = if (current_direction != Direction.Right) Direction.Left else current_direction,
+				@intFromEnum(Key.Right) => current_direction = if (current_direction != Direction.Left) Direction.Right else current_direction,
 				else => {},
 			}
 		}
@@ -55,10 +76,17 @@ pub fn start(alloc: heap.Allocator) !void {
 			snake.items[i].draw(&buffer);
 		}
 		snake.remove(0);
-		try snake.append(Square{ .x = snake.items[1].x+square_size, .y = 120 });
+		var new_square = Square{ .x = snake.items[snake.items.len-1].x, .y = snake.items[snake.items.len-1].y };
+		switch (current_direction) {
+			Direction.Up => new_square.y -= square_size,
+			Direction.Down => new_square.y += square_size,
+			Direction.Left => new_square.x -= square_size,
+			Direction.Right => new_square.x += square_size,
+		}
+		try snake.append(new_square);
 
 		try buffer.update();
-		try sleepms(50);
+		try sleepms(100);
 	}
 
 }

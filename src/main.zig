@@ -186,7 +186,7 @@ fn entry() !Request {
 
 	alloc.free(resolutions);
 
-	try graphics.clear();
+	graphics.clear();
 
 	try rng.init();
 	log.new_task("InitHeap");
@@ -253,13 +253,11 @@ fn entry() !Request {
 				\\date                  Print date
 				\\snake                 Start a builtin snake game
 				\\getkey                Print keypress info
+				\\panic <str>           Initiate a kernel panic with message <str>
 			;
 			try fb.println("{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "clear")) {
-			fb.clear() catch |e| {
-				try fb.println("Error: {s}", .{@errorName(e)});
-				continue;
-			};
+			fb.clear();
 		} else if (std.mem.eql(u8, args[0], "shutdown")) {
 			try fb.println("Shutting down...", .{});
 			return Request.Shutdown;
@@ -343,7 +341,7 @@ fn entry() !Request {
 				try fb.println("Error: {s}", .{@errorName(e)});
 			};
 
-			try graphics.load_state(buf);
+			graphics.load_state(buf);
 		} else if (std.mem.eql(u8, args[0], "getkey")) {
 
 			var key: ?io.Key = null;

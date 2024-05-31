@@ -57,21 +57,24 @@ pub fn init() !void {
 	inited = true;
 }
 
-pub fn draw_pixel(x: u64, y: u64, color: Color) !void {
+pub fn draw_pixel(x: u64, y: u64, color: Color) void {
+	if (x >= gop.?.mode.info.horizontal_resolution or y >= gop.?.mode.info.vertical_resolution or x < 0 or y < 0) {
+		return;
+	}
 	var fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
 	fb[x + y * gop.?.mode.info.pixels_per_scan_line] = color.to_raw();
 }
 
-pub fn draw_rectangle(x: u64, y: u64, width: u64, height: u64, color: Color) !void {
+pub fn draw_rectangle(x: u64, y: u64, width: u64, height: u64, color: Color) void {
 	var c = [1]uefi.protocol.GraphicsOutput.BltPixel{ color.to_gop() };
-	const res = gop.?.blt(&c, uefi.protocol.GraphicsOutput.BltOperation.BltVideoFill, 0, 0, x, y, width, height, 0);
-	if (res != uefi.Status.Success) {
-		return res.err();
-	}
+	_ = gop.?.blt(&c, uefi.protocol.GraphicsOutput.BltOperation.BltVideoFill, 0, 0, x, y, width, height, 0);
+	// if (res != uefi.Status.Success) {
+	// 	return res.err();
+	// }
 }
 
-pub fn clear() !void {
-	try draw_rectangle(0, 0, gop.?.mode.info.horizontal_resolution, gop.?.mode.info.vertical_resolution, Color{ .r = 0, .g = 0, .b = 0 });
+pub fn clear() void {
+	draw_rectangle(0, 0, gop.?.mode.info.horizontal_resolution, gop.?.mode.info.vertical_resolution, Color{ .r = 0, .g = 0, .b = 0 });
 }
 
 pub fn save_state(alloc: heap.Allocator) ![]u32 {
@@ -87,7 +90,7 @@ pub fn save_state(alloc: heap.Allocator) ![]u32 {
 	return buf;
 }
 
-pub fn load_state(buf: []u32) !void {
+pub fn load_state(buf: []u32) void {
 	const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
 
 	for (0..buf.len) |i| {

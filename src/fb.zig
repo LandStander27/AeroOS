@@ -75,12 +75,12 @@ fn to_i32(x: anytype) i32 {
 	return @intCast(x);
 }
 
-fn put_cursor() !void {
+fn put_cursor() void {
 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
 
 	for (cursor, 0..) |row, i| {
 		for (row, 0..) |pixel, j| {
-			try graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) White else Black);
+			graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) White else Black);
 		}
 	}
 }
@@ -89,12 +89,12 @@ pub fn set_color(color: Color) void {
 	current_color = color;
 }
 
-fn putchar(c: u8) !void {
+fn putchar(c: u8) void {
 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
 
 	for (font[c], 0..) |row, i| {
 		for (row, 0..) |pixel, j| {
-			try graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) current_color else Black);
+			graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) current_color else Black);
 		}
 	}
 }
@@ -106,7 +106,7 @@ pub fn puts(str: []const u8) !void {
 
 	for (str) |c| {
 		if (c == '\n') {
-			try putchar(' ');
+			putchar(' ');
 			cursor_pos[0] = 0;
 			cursor_pos[1] += 1;
 			continue;
@@ -114,44 +114,43 @@ pub fn puts(str: []const u8) !void {
 			if (cursor_pos[0] == 0 and cursor_pos[1] == 0) {
 				continue;
 			}
-			try putchar(' ');
+			putchar(' ');
 			if (cursor_pos[0] != 0) {
 				cursor_pos[0] -= 1;
 			} else {
 				cursor_pos[1] -= 1;
 				cursor_pos[0] = max_column;
 			}
-			try put_cursor();
+			put_cursor();
 			continue;
 		} else if (c == '\r') {
-			try putchar(' ');
+			putchar(' ');
 			cursor_pos[0] = 0;
 			continue;
 		}
-		try putchar(c);
+		putchar(c);
 		if (cursor_pos[0] >= max_column) {
 			cursor_pos[1] += 1;
 			cursor_pos[0] = 0;
 		} else if (cursor_pos[1] >= max_row - 2) {
 			cursor_pos[1] = 0;
 			const current = graphics.current_resolution();
-			try graphics.draw_rectangle(0, 0, current.width, current.height, Black);
-			try putchar(c);
+			graphics.draw_rectangle(0, 0, current.width, current.height, Black);
+			putchar(c);
 			cursor_pos[0] += 1;
 		} else {
 			cursor_pos[0] += 1;
 		}
 	}
-	try put_cursor();
+	put_cursor();
 }
 
-pub fn clear() !void {
+pub fn clear() void {
 	cursor_pos[0] = 0;
 	cursor_pos[1] = 0;
 
 	const current = graphics.current_resolution();
-	try graphics.draw_rectangle(0, 0, current.width, current.height, Black);
-
+	graphics.draw_rectangle(0, 0, current.width, current.height, Black);
 }
 
 pub fn alloc_print(alloc: heap.Allocator, comptime format: []const u8, args: anytype) ![]u8 {
@@ -211,15 +210,15 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 			}
 
 			if (key.?.unicode.char == 'u' and key.?.ctrl) {
-				try putchar(' ');
+				putchar(' ');
 				cursor_pos[0] -= 1;
 				for (0..len) |_| {
-					try putchar(' ');
+					putchar(' ');
 					cursor_pos[0] -= 1;
 				}
 				cursor_pos[0] += 1;
 				len = 0;
-				try put_cursor();
+				put_cursor();
 				continue;
 			}
 
