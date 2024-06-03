@@ -1,3 +1,5 @@
+prog = "mkisofs"
+
 all:
 	make setup
 	make build
@@ -11,12 +13,12 @@ setup:
 	mmd -i EFI/BOOT/boot.img ::EFI/BOOT
 
 build:
-	zig build
+	zig build --release=fast
 	-mdel -i EFI/BOOT/boot.img ::EFI/BOOT/bootx64.efi
 	mcopy -i EFI/BOOT/boot.img EFI/BOOT/bootx64.efi ::EFI/BOOT
 	mkdir -p bin
 	cp -r EFI bin
-	mkisofs -o boot.iso -R -J -v -d -N -no-emul-boot -eltorito-platform efi -eltorito-boot EFI/BOOT/boot.img -V "BOOT" -A "Boot" bin
+	$(prog) -o boot.iso -R -J -v -d -N -no-emul-boot -eltorito-platform efi -eltorito-boot EFI/BOOT/boot.img -V "BOOT" -A "Boot" bin
 
 run:
 	qemu-system-x86_64 -bios /usr/share/ovmf/x64/OVMF.fd -cdrom boot.iso -m 4G -device virtio-rng-pci

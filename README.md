@@ -2,9 +2,13 @@
 - OS made from scratch in Zig.
 
 #### Building
-1. Install Zig, Make, git, mtools, and xorriso
+1. Install deps
+	* Arch Linux: `pacman -S zig make git mtools xorriso dosfstools cdrtools`
+	* Debian: `apt install make git mtools xorriso dosfstools`
 2. `git clone https://github.com/LandStander27/zig-os && cd zig-os`
-3. `make`
+3. Building
+	* Arch Linux: `make all`
+	* Debian: `make all prog="xorriso -as mkisofs"`
 4. ISO is built to `./boot.iso`.
 
 ##### Running
