@@ -77,26 +77,39 @@ pub fn clear() void {
 	draw_rectangle(0, 0, gop.?.mode.info.horizontal_resolution, gop.?.mode.info.vertical_resolution, Color{ .r = 0, .g = 0, .b = 0 });
 }
 
-pub fn save_state(alloc: heap.Allocator) ![]u32 {
-	var buf = try alloc.alloc(u32, gop.?.mode.info.horizontal_resolution * gop.?.mode.info.vertical_resolution);
-	errdefer alloc.free(buf);
+pub const State = struct {
+	alloc: heap.Allocator,
+	buf: []u32,
 
-	const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
+	pub fn init(alloc: heap.Allocator) !State {
+		var buf = try alloc.alloc(u32, gop.?.mode.info.horizontal_resolution * gop.?.mode.info.vertical_resolution);
+		errdefer alloc.free(buf);
 
-	for (0..buf.len) |i| {
-		buf[i] = fb[i];
+		const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
+
+		for (0..buf.len) |i| {
+			buf[i] = fb[i];
+		}
+
+		return .{
+			.alloc = alloc,
+			.buf = buf,
+		};
 	}
 
-	return buf;
-}
+	pub fn load(self: *const State) void {
+		const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
 
-pub fn load_state(buf: []u32) void {
-	const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
-
-	for (0..buf.len) |i| {
-		fb[i] = buf[i];
+		for (0..self.buf.len) |i| {
+			fb[i] = self.buf[i];
+		}
 	}
-}
+
+	pub fn deinit(self: *const State) void {
+		self.alloc.free(self.buf);
+	}
+
+};
 
 pub const Framebuffer = struct {
 	framebuffer: []uefi.protocol.GraphicsOutput.BltPixel,

@@ -55,6 +55,18 @@ var current_color = White;
 
 var cursor_pos = [_]u64{0, 0};
 
+pub fn get_cursor_pos() struct { x: u64, y: u64 } {
+	return .{
+		.x = cursor_pos[0],
+		.y = cursor_pos[1],
+	};
+}
+
+pub fn set_cursor_pos(x: u64, y: u64) void {
+	cursor_pos[0] = x;
+	cursor_pos[1] = y;
+}
+
 pub fn down(amount: i64) void {
 	var a: i64 = @intCast(cursor_pos[1]);
 	a += amount;

@@ -40,17 +40,19 @@ const Direction = enum {
 
 pub fn start(alloc: heap.Allocator) !void {
 
-	var buffer = try graphics.Framebuffer.init(alloc);
-	defer buffer.deinit();
+	var frame = try graphics.Framebuffer.init(alloc);
+	defer frame.deinit();
 	const res = graphics.current_resolution();
 	_ = res;
+
+	var keypresses = try ArrayList(u8).init(alloc);
+	defer keypresses.deinit();
 
 	var snake = try ArrayList(Square).init(alloc);
 	defer snake.deinit();
 
-	try snake.append(Square{ .x = 100, .y = 100 });
-	try snake.append(Square{ .x = 120, .y = 100 });
-	try snake.append(Square{ .x = 120, .y = 120 });
+	try snake.append(Square{ .x = 0, .y = 0 });
+	try snake.append(Square{ .x = square_size, .y = 0 });
 
 	var current_direction = Direction.Right;
 
@@ -58,8 +60,16 @@ pub fn start(alloc: heap.Allocator) !void {
 
 	while (running) {
 
+		if (keypresses.items.len >= 128) {
+			try keypresses.reset();
+		} else if (std.mem.endsWith(u8, keypresses.items, "panic")) {
+			return error.UserRequestedPanic;
+		}
+
 		const key = try io.getkey();
 		if (key) |k| {
+			try keypresses.append(k.unicode.convert());
+
 			switch (k.scancode) {
 				@intFromEnum(Key.Escape) => running = false,
 				@intFromEnum(Key.Down) => current_direction = if (current_direction != Direction.Up) Direction.Down else current_direction,
@@ -70,10 +80,10 @@ pub fn start(alloc: heap.Allocator) !void {
 			}
 		}
 
-		buffer.clear();
+		frame.clear();
 
 		for (0..snake.items.len) |i| {
-			snake.items[i].draw(&buffer);
+			snake.items[i].draw(&frame);
 		}
 		snake.remove(0);
 		var new_square = Square{ .x = snake.items[snake.items.len-1].x, .y = snake.items[snake.items.len-1].y };
@@ -85,7 +95,7 @@ pub fn start(alloc: heap.Allocator) !void {
 		}
 		try snake.append(new_square);
 
-		try buffer.update();
+		try frame.update();
 		try sleepms(100);
 	}
 

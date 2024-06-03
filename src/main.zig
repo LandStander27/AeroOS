@@ -23,6 +23,8 @@ const log = @import("log.zig");
 
 const rng = @import("rand.zig");
 
+const snake_on_boot: bool = true;
+
 fn digit_amount(n: u64) u64 {
 	var amount: u64 = 0;
 	var num = n;
@@ -125,6 +127,30 @@ const Request = enum {
 	Exit,
 };
 
+fn game(alloc: heap.Allocator) !void {
+	log.new_task("Game");
+	errdefer log.error_task();
+
+	const state = try graphics.State.init(alloc);
+	defer state.deinit();
+
+	const pos = fb.get_cursor_pos();
+	fb.set_cursor_pos(0, 0);
+
+	@import("snake.zig").start(alloc) catch |e| {
+		state.load();
+		fb.set_cursor_pos(pos.x, pos.y);
+		log.error_task();
+		try fb.println("Error: {s}", .{@errorName(e)});
+		return;
+	};
+
+	state.load();
+	fb.set_cursor_pos(pos.x, pos.y);
+
+	log.finish_task();
+}
+
 fn entry() !Request {
 
 	const alloc = heap.Allocator.init();
@@ -200,13 +226,20 @@ fn entry() !Request {
 	try fs.init();
 	try fs.mount_root();
 
-	var current_path = try ArrayList(u8).init(alloc);
-	defer current_path.deinit();
+	// var current_path = try ArrayList(u8).init(alloc);
+	// defer current_path.deinit();
 
-	try current_path.append('/');
+	// try current_path.append('/');
 
 	if (rng.get_mode() == .NonRandom) {
 		try fb.println("Warning! Firmware does not support RNG.\nAll random numbers generated will not be random.", .{});
+		if (snake_on_boot) {
+			try sleepms(1000);
+		}
+	}
+
+	if (snake_on_boot) {
+		try game(alloc);
 	}
 
 	outer: while (true) {
@@ -333,15 +366,7 @@ fn entry() !Request {
 			}
 
 		} else if (std.mem.eql(u8, args[0], "snake")) {
-			try fb.println("Starting", .{});
-			const buf = try graphics.save_state(alloc);
-			defer alloc.free(buf);
-
-			@import("snake.zig").start(alloc) catch |e| {
-				try fb.println("Error: {s}", .{@errorName(e)});
-			};
-
-			graphics.load_state(buf);
+			try game(alloc);
 		} else if (std.mem.eql(u8, args[0], "getkey")) {
 
 			var key: ?io.Key = null;

@@ -68,5 +68,11 @@ pub fn ArrayList(comptime T: type) type {
 			self.items = self.data[0..0];
 		}
 
+		pub fn reset(self: *Self) !void {
+			self.data = try self.allocator.alloc(T, 16);
+			self.capacity = 16;
+			self.clear();
+		}
+
 	};
 }
