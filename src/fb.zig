@@ -13,7 +13,7 @@ const font = blk: {
 
 	@setEvalBranchQuota(100000);
 
-	const data = @embedFile("vga16.psf")[4..];
+	const data = @embedFile("./assets/vga16.psf")[4..];
 	var ret: [512][16][8]bool = undefined;
 
 	for (&ret, 0..) |*char, i| {
