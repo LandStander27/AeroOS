@@ -233,12 +233,15 @@ fn entry() !Request {
 
 	if (rng.get_mode() == .NonRandom) {
 		try fb.println("Warning! Firmware does not support RNG.\nAll random numbers generated will not be random.", .{});
-		if (snake_on_boot) {
-			try sleepms(1000);
-		}
 	}
 
 	if (snake_on_boot) {
+		try fb.println("Booting directly into snake...", .{});
+		fb.set_color(fb.Cyan);
+		try fb.print("> ", .{});
+		fb.set_color(fb.White);
+		try fb.println("snake", .{});
+		try sleepms(1000);
 		try game(alloc);
 	}
 

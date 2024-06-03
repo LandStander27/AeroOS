@@ -11,14 +11,20 @@ const graphics = @import("graphics.zig");
 const rng = @import("rand.zig");
 const ArrayList = @import("array.zig").ArrayList;
 
-const square_size = 20;
+const square_size: u64 = 20;
+
+const Type = enum {
+	Snake,
+	Food,
+};
 
 const Square = struct {
 	x: u64,
 	y: u64,
+	typ: Type = .Snake,
 
 	pub fn draw(self: *Square, buffer: *graphics.Framebuffer) void {
-		buffer.draw_rectangle(self.x+1, self.y+1, square_size-2, square_size-2, graphics.Color{ .r = 0, .g = 255, .b = 0 });
+		buffer.draw_rectangle(self.x+1, self.y+1, square_size-2, square_size-2, graphics.Color{ .r = if (self.typ == .Food) 255 else 0, .g = if (self.typ == .Snake) 255 else 0, .b = 0 });
 	}
 
 };
@@ -43,10 +49,18 @@ pub fn start(alloc: heap.Allocator) !void {
 	var frame = try graphics.Framebuffer.init(alloc);
 	defer frame.deinit();
 	const res = graphics.current_resolution();
-	_ = res;
 
 	var keypresses = try ArrayList(u8).init(alloc);
 	defer keypresses.deinit();
+
+	var food = try ArrayList(Square).init(alloc);
+	defer food.deinit();
+
+	const rows = res.height / square_size;
+	const cols = res.width / square_size;
+
+	try food.append(Square{ .x = (try rng.random(0, cols))*square_size, .y = (try rng.random(0, rows))*square_size, .typ = .Food });
+	try food.append(Square{ .x = (try rng.random(0, cols))*square_size, .y = (try rng.random(0, rows))*square_size, .typ = .Food });
 
 	var snake = try ArrayList(Square).init(alloc);
 	defer snake.deinit();
@@ -62,7 +76,7 @@ pub fn start(alloc: heap.Allocator) !void {
 
 		if (keypresses.items.len >= 128) {
 			try keypresses.reset();
-		} else if (std.mem.endsWith(u8, keypresses.items, "panic")) {
+		} else if (std.mem.endsWith(u8, keypresses.items, "panic123")) {
 			return error.UserRequestedPanic;
 		}
 
@@ -80,13 +94,8 @@ pub fn start(alloc: heap.Allocator) !void {
 			}
 		}
 
-		frame.clear();
-
-		for (0..snake.items.len) |i| {
-			snake.items[i].draw(&frame);
-		}
 		snake.remove(0);
-		var new_square = Square{ .x = snake.items[snake.items.len-1].x, .y = snake.items[snake.items.len-1].y };
+		var new_square = Square{ .x = snake.last().?.x, .y = snake.last().?.y };
 		switch (current_direction) {
 			Direction.Up => new_square.y -= square_size,
 			Direction.Down => new_square.y += square_size,
@@ -94,6 +103,25 @@ pub fn start(alloc: heap.Allocator) !void {
 			Direction.Right => new_square.x += square_size,
 		}
 		try snake.append(new_square);
+
+		for (food.items, 0..) |apple, i| {
+			if (snake.last().?.x == apple.x and snake.last().?.y == apple.y) {
+				food.remove(i);
+				try food.append(Square{ .x = (try rng.random(0, cols))*square_size, .y = (try rng.random(0, rows))*square_size, .typ = .Food });
+				try snake.insert(0, Square{ .x = snake.items[0].x, .y = snake.items[0].y });
+				break;
+			}
+		}
+
+		frame.clear();
+
+		for (0..snake.items.len) |i| {
+			snake.items[i].draw(&frame);
+		}
+
+		for (0..food.items.len) |i| {
+			food.items[i].draw(&frame);
+		}
 
 		try frame.update();
 		try sleepms(100);

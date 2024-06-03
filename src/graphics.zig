@@ -52,6 +52,9 @@ pub fn init() !void {
 	if (boot_services.locateProtocol(&uefi.protocol.GraphicsOutput.guid, null, @ptrCast(&gop)) != uefi.Status.Success) {
 		return error.NoGOPFound;
 	}
+	if (gop.?.mode.max_mode == 0) {
+		return error.NoSupportedResolutions;
+	}
 	log.finish_task();
 	// try @import("time.zig").sleepms(350);
 	inited = true;

@@ -47,11 +47,35 @@ pub fn ArrayList(comptime T: type) type {
 			self.len -= 1;
 		}
 
-		pub fn append(self: *Self, item: T) !void {
+		fn grow(self: *Self) !void {
 			if (self.len >= self.capacity) {
-				self.data = try self.allocator.realloc(T, self.items, self.capacity * 2);
+				self.data = try self.allocator.realloc(T, self.data, self.capacity * 2);
 				self.capacity *= 2;
 			}
+		}
+
+		pub fn insert(self: *Self, index: usize, item: T) !void {
+			try self.grow();
+
+			var i = self.len;
+			while (i > index) : (i -= 1) {
+				self.data[i] = self.data[i - 1];
+			}
+			self.data[index] = item;
+			self.items = self.data[0..self.len + 1];
+			self.len += 1;
+
+		}
+
+		pub fn last(self: *Self) ?T {
+			if (self.len == 0) {
+				return null;
+			}
+			return self.data[self.len - 1];
+		}
+
+		pub fn append(self: *Self, item: T) !void {
+			try self.grow();
 			self.data[self.len] = item;
 			self.items = self.data[0..self.len + 1];
 			self.len += 1;
@@ -69,7 +93,7 @@ pub fn ArrayList(comptime T: type) type {
 		}
 
 		pub fn reset(self: *Self) !void {
-			self.data = try self.allocator.alloc(T, 16);
+			self.data = try self.allocator.realloc(T, self.data, 16);
 			self.capacity = 16;
 			self.clear();
 		}
