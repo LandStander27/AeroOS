@@ -1,5 +1,5 @@
 ### Zig OS
-- OS made from scratch in Zig.
+- OS made from scratch in Zig with EFI support.
 
 #### Building
 1. Install deps

@@ -67,11 +67,11 @@ pub fn ArrayList(comptime T: type) type {
 
 		}
 
-		pub fn last(self: *Self) ?T {
+		pub fn last(self: *Self) ?*T {
 			if (self.len == 0) {
 				return null;
 			}
-			return self.data[self.len - 1];
+			return &self.data[self.len - 1];
 		}
 
 		pub fn append(self: *Self, item: T) !void {
