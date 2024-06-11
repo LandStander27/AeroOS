@@ -18,12 +18,12 @@ const fb = @import("fb.zig");
 const pointer = @import("mouse.zig");
 
 const fs = @import("fs.zig");
-
 const log = @import("log.zig");
-
 const rng = @import("rand.zig");
 
-const snake_on_boot: bool = true;
+const network = @import("network.zig");
+
+const snake_on_boot: bool = false;
 
 fn digit_amount(n: u64) u64 {
 	var amount: u64 = 0;
@@ -225,6 +225,8 @@ fn entry() !Request {
 
 	try fs.init();
 	try fs.mount_root();
+
+	network.init() catch {};
 
 	// var current_path = try ArrayList(u8).init(alloc);
 	// defer current_path.deinit();
