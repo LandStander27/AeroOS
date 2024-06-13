@@ -1,7 +1,9 @@
 const std = @import("std");
 
+const bs = @import("boot_services.zig");
+
 pub fn sleepms(ms: u64) !void {
-	const boot_services = std.os.uefi.system_table.boot_services.?;
+	const boot_services = try bs.init();
 	const res = boot_services.stall(ms * 1000);
 	if (res != .Success) {
 		try res.err();

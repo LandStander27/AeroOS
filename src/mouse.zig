@@ -1,6 +1,8 @@
 const std = @import("std");
 const uefi = std.os.uefi;
 
+const bs = @import("boot_services.zig");
+
 const log = @import("log.zig");
 
 var spp: ?*uefi.protocol.SimplePointer = null;
@@ -12,7 +14,7 @@ pub fn init() !void {
 	log.new_task("SimplePointerProtocol");
 	errdefer log.error_task();
 
-	if (uefi.system_table.boot_services.?.locateProtocol(&uefi.protocol.SimplePointer.guid, null, @ptrCast(&spp)) != uefi.Status.Success) {
+	if ((try bs.init()).locateProtocol(&uefi.protocol.SimplePointer.guid, null, @ptrCast(&spp)) != uefi.Status.Success) {
 		return error.NoSPPFound;
 	}
 	log.finish_task();

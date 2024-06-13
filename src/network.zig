@@ -2,13 +2,14 @@ const std = @import("std");
 const uefi = std.os.uefi;
 
 const heap = @import("heap.zig");
+const bs = @import("boot_services.zig");
 const log = @import("log.zig");
 const fb = @import("fb.zig");
 
 var network: ?*uefi.protocol.SimpleNetwork = null;
 
 pub fn init() !void {
-	const boot_services = uefi.system_table.boot_services.?;
+	const boot_services = try bs.init();
 
 	log.new_task("SimpleNetwork");
 	errdefer log.error_task();

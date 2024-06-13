@@ -2,6 +2,7 @@ const std = @import("std");
 const uefi = std.os.uefi;
 
 const heap = @import("heap.zig");
+const bs = @import("boot_services.zig");
 
 var fs: ?*uefi.protocol.SimpleFileSystem = null;
 var loaded_image: ?*uefi.protocol.LoadedImage = null;
@@ -14,7 +15,7 @@ const fb = @import("fb.zig");
 const log = @import("log.zig");
 
 pub fn init() !void {
-	const boot_services = uefi.system_table.boot_services.?;
+	const boot_services = try bs.init();
 
 	errdefer log.error_task();
 
@@ -22,7 +23,7 @@ pub fn init() !void {
 	if (boot_services.handleProtocol(uefi.handle, &uefi.protocol.LoadedImage.guid, @ptrCast(&loaded_image)) != uefi.Status.Success) {
 		return error.NoLoadedImage;
 	}
-	
+
 	log.finish_task();
 
 	log.new_task("DevicePath");

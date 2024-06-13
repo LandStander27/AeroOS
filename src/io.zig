@@ -3,6 +3,7 @@ const uefi = std.os.uefi;
 const time = @import("time.zig");
 
 const heap = @import("heap.zig");
+const bs = @import("boot_services.zig");
 
 var con_out: *uefi.protocol.SimpleTextOutput = undefined;
 var con_in: *uefi.protocol.SimpleTextInputEx = undefined;
@@ -10,7 +11,7 @@ var inited: bool = false;
 
 pub fn init_io() !void {
 	con_out = uefi.system_table.con_out.?;
-	if (uefi.system_table.boot_services.?.locateProtocol(&uefi.protocol.SimpleTextInputEx.guid, null, @ptrCast(&con_in)) != uefi.Status.Success) {
+	if ((try bs.init()).locateProtocol(&uefi.protocol.SimpleTextInputEx.guid, null, @ptrCast(&con_in)) != uefi.Status.Success) {
 		return error.NoStdIn;
 	}
 	inited = true;

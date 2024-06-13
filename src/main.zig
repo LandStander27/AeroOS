@@ -4,6 +4,7 @@ const time = @import("time.zig");
 const sleepms = time.sleepms;
 
 const heap = @import("heap.zig");
+const bs = @import("boot_services.zig");
 const ArrayList = @import("array.zig").ArrayList;
 
 var con_out: *uefi.protocol.SimpleTextOutput = undefined;
@@ -433,9 +434,7 @@ pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 }
 
 fn enter_loop() noreturn {
-	print_either("KERNEL LOOP");
-
-	exit_services() catch {
+	bs.exit_services() catch {
 		print_either("EXIT SERVICES FAILED");
 
 		while (true) {
@@ -443,6 +442,8 @@ fn enter_loop() noreturn {
 		}
 
 	};
+
+	print_either("KERNEL LOOP");
 
 	while (true) {
 		// if (graphics.has_inited()) {
@@ -455,30 +456,17 @@ fn enter_loop() noreturn {
 	}
 }
 
-fn exit_services() !void {
-	var memory_map: [*]uefi.tables.MemoryDescriptor = undefined;
-	var memory_map_size: usize = 0;
-	var memory_map_key: usize = undefined;
-	var descriptor_size: usize = undefined;
-	var descriptor_version: u32 = undefined;
-	while (uefi.Status.BufferTooSmall == uefi.system_table.boot_services.?.getMemoryMap(&memory_map_size, memory_map, &memory_map_key, &descriptor_size, &descriptor_version)) {
-		if (uefi.Status.Success != uefi.system_table.boot_services.?.allocatePool(uefi.tables.MemoryType.BootServicesData, memory_map_size, @ptrCast(&memory_map))) {
-			return error.CouldNotAllocateMemoryMap;
-		}
-	}
-
-	if (uefi.system_table.boot_services.?.exitBootServices(uefi.handle, memory_map_key) != uefi.Status.Success) {
-		return error.CouldNotExitBootServices;
-	}
-}
-
-fn printf_either(comptime format: []const u8, args: anytype) !void {
+fn printf_either(comptime format: []const u8, args: anytype) void {
 	if (graphics.has_inited()) {
 		fb.println(format, args) catch {
-			try io.println(format, args);
+			io.println(format, args) catch {
+				print_either(format);
+			};
 		};
 	} else {
-		try io.println(format, args);
+		io.println(format, args) catch {
+			io.puts(format ++ "\n");
+		};
 	}
 }
 
@@ -513,23 +501,22 @@ pub fn main() void {
 
 	};
 
-	const res = uefi.system_table.boot_services.?.setWatchdogTimer(0, 0, 0, null);
-	if (res != uefi.Status.Success) {
-		printf_either("COULD NOT SET WATCHDOG: {any}", .{res}) catch {};
-	}
+	bs.disable_watchdog() catch |e| {
+		printf_either("COULD NOT SET WATCHDOG: {any}", .{e});
+	};
 
 	const req = entry() catch |e| {
-		printf_either("KERNEL PANIC: {any}", .{e}) catch {};
+		printf_either("KERNEL PANIC: {any}", .{e});
 		enter_loop();
 	};
 
 	if (heap.amount != 0) {
-		printf_either("MEMORY LEAKS DETECTED: {d}", .{heap.amount}) catch {};
+		printf_either("MEMORY LEAKS DETECTED: {d}", .{heap.amount});
 		enter_loop();
 	}
 
 	fs.umount_root() catch |e| {
-		printf_either("KERNEL PANIC: {any}", .{e}) catch {};
+		printf_either("KERNEL PANIC: {any}", .{e});
 		enter_loop();
 	};
 	sleepms(1000) catch unreachable;
@@ -537,9 +524,17 @@ pub fn main() void {
 	switch (req) {
 		Request.Exit => {},
 		Request.Shutdown => {
+			bs.exit_services() catch {
+				print_either("EXIT SERVICES FAILED");
+				sleepms(5000) catch {};
+			};
 			uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetShutdown, uefi.Status.Success, 0, null);
 		},
 		Request.Reboot => {
+			bs.exit_services() catch {
+				print_either("EXIT SERVICES FAILED");
+				sleepms(5000) catch {};
+			};
 			uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetCold, uefi.Status.Success, 0, null);
 		},
 	}

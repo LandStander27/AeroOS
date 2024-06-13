@@ -1,5 +1,8 @@
 const std = @import("std");
 const uefi = std.os.uefi;
+
+const bs = @import("boot_services.zig");
+
 const log = @import("log.zig");
 
 var rng: ?*uefi.protocol.Rng = null;
@@ -32,7 +35,7 @@ pub fn init() !void {
 
 	log.new_task("HardwareRNG");
 	errdefer log.error_task();
-	const boot_services = uefi.system_table.boot_services.?;
+	const boot_services = try bs.init();
 
 	if (boot_services.locateProtocol(&uefi.protocol.Rng.guid, null, @ptrCast(&rng)) != uefi.Status.Success) {
 		// return error.NoRNGFound;

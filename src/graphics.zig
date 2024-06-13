@@ -2,6 +2,7 @@ const std = @import("std");
 const uefi = std.os.uefi;
 
 const heap = @import("heap.zig");
+const bs = @import("boot_services.zig");
 
 var gop: ?*uefi.protocol.GraphicsOutput = null;
 var inited = false;
@@ -49,7 +50,7 @@ pub fn has_inited() bool {
 }
 
 pub fn init() !void {
-	const boot_services = uefi.system_table.boot_services.?;
+	const boot_services = try bs.init();
 	log.new_task("GraphicsOutput");
 	errdefer log.error_task();
 	// try @import("time.zig").sleepms(350);
@@ -213,7 +214,7 @@ pub const Framebuffer = struct {
 /// Caller owns and must free memory.
 pub fn get_resolutions(allocator: heap.Allocator) ![]VideoMode {
 
-	const boot_services = uefi.system_table.boot_services.?;
+	const boot_services = try bs.init();
 
 	if (boot_services.locateProtocol(&uefi.protocol.GraphicsOutput.guid, null, @ptrCast(&gop)) == uefi.Status.Success) {
 

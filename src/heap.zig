@@ -1,4 +1,7 @@
 const uefi = @import("std").os.uefi;
+
+const bs = @import("boot_services.zig");
+
 const println = @import("io.zig").println;
 const puts = @import("io.zig").puts;
 const graphics = @import("graphics.zig");
@@ -16,7 +19,7 @@ pub const Allocator = struct {
 
 	pub fn alloc(_: *const Allocator, comptime T: type, count: usize) ![]T {
 		var memory: [*]align(8) T = undefined;
-		const res = uefi.system_table.boot_services.?.allocatePool(uefi.tables.MemoryType.BootServicesData, count * @sizeOf(T), @ptrCast(&memory));
+		const res = (try bs.init()).allocatePool(uefi.tables.MemoryType.BootServicesData, count * @sizeOf(T), @ptrCast(&memory));
 		if (res != uefi.Status.Success) {
 			try res.err();
 		}
@@ -32,13 +35,15 @@ pub const Allocator = struct {
 			}
 			break :blk new_memory.len;
 		};
-		uefi.system_table.boot_services.?.copyMem(@ptrCast(new_memory.ptr), @ptrCast(old_memory.ptr), size * @sizeOf(T));
+		(try bs.init()).copyMem(@ptrCast(new_memory.ptr), @ptrCast(old_memory.ptr), size * @sizeOf(T));
 		self.free(old_memory);
 		return new_memory;
 	}
 
 	pub fn free(_: *const Allocator, memory: anytype) void {
-		const res = uefi.system_table.boot_services.?.freePool(@alignCast(@ptrCast(memory.ptr)));
+		const res = (bs.init() catch {
+			@panic("Cannot free without boot services");
+		}).freePool(@alignCast(@ptrCast(memory.ptr)));
 		if (res != uefi.Status.Success) {
 			if (graphics.has_inited()) {
 				fb.println("Unable to free memory", .{}) catch {
