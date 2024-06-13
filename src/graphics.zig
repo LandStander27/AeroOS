@@ -24,6 +24,10 @@ pub const Color = struct {
 		return (self.r << 16) + (self.g << 8) + self.b;
 	}
 
+	pub fn from_raw(raw: u32) Color {
+		return Color{ .r = raw >> 16, .g = (raw >> 8) & 0xFF, .b = raw & 0xFF };
+	}
+
 	pub fn to_gop(self: *const Color) uefi.protocol.GraphicsOutput.BltPixel {
 		return uefi.protocol.GraphicsOutput.BltPixel{ .red = @intCast(self.r), .green = @intCast(self.g), .blue = @intCast(self.b) };
 	}
@@ -66,6 +70,43 @@ pub fn draw_pixel(x: u64, y: u64, color: Color) void {
 	}
 	var fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
 	fb[x + y * gop.?.mode.info.pixels_per_scan_line] = color.to_raw();
+}
+
+pub fn get_pixel(x: u64, y: u64) Color {
+	if (x >= gop.?.mode.info.horizontal_resolution or y >= gop.?.mode.info.vertical_resolution or x < 0 or y < 0) {
+		return Color{ .r = 0, .g = 0, .b = 0 };
+	}
+	const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
+	return Color.from_raw(fb[x + y * gop.?.mode.info.pixels_per_scan_line]);
+}
+
+const Direction = enum {
+	Down,
+	Up,
+};
+
+pub fn scroll(pixels: u64, direction: Direction) void {
+
+	const current = current_resolution();
+
+	switch (direction) {
+		.Down => {
+			for (0..current.height-pixels) |y| {
+				for (0..current.width) |x| {
+					draw_pixel(x, y, get_pixel(x, y+pixels));
+					draw_pixel(x, y+pixels, Color{ .r = 0, .g = 0, .b = 0 });
+				}
+			}
+		},
+		.Up => {
+			for (0..current.height-pixels) |y| {
+				for (0..current.width) |x| {
+					draw_pixel(x, y+pixels, get_pixel(x, y));
+					draw_pixel(x, y, Color{ .r = 0, .g = 0, .b = 0 });
+				}
+			}
+		},
+	}
 }
 
 pub fn draw_rectangle(x: u64, y: u64, width: u64, height: u64, color: Color) void {

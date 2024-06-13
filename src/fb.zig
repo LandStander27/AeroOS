@@ -145,9 +145,8 @@ pub fn puts(str: []const u8) !void {
 			cursor_pos[1] += 1;
 			cursor_pos[0] = 0;
 		} else if (cursor_pos[1] >= max_row - 2) {
-			cursor_pos[1] = 0;
-			const current = graphics.current_resolution();
-			graphics.draw_rectangle(0, 0, current.width, current.height, Black);
+			graphics.scroll(font_height, .Down);
+			cursor_pos[1] -= 1;
 			putchar(c);
 			cursor_pos[0] += 1;
 		} else {
