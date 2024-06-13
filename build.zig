@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
 	const target_output = b.addInstallArtifact(exe, .{
 		.dest_dir = .{
 			.override = .{
-				.custom = "../EFI/BOOT",
+				.custom = "../bin/EFI/BOOT",
 			},
 		},
 	});
