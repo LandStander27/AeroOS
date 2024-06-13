@@ -5,6 +5,7 @@
 1. Install deps
 	* Arch Linux: `pacman -S zig make git mtools xorriso dosfstools cdrtools`
 	* Debian: `apt install make git mtools xorriso dosfstools`
+		* Note: Zig must be [installed manually](https://ziglang.org/download/) (there is no debian package)
 2. `git clone https://github.com/LandStander27/zig-os && cd zig-os`
 3. Building
 	* Arch Linux: `make all`
