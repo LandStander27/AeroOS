@@ -12,6 +12,11 @@ setup:
 	mmd -i bin/EFI/BOOT/boot.img ::EFI
 	mmd -i bin/EFI/BOOT/boot.img ::EFI/BOOT
 
+docker:
+	docker build -t aerobuilder .
+	docker run -h aerobuilder --name aerobuilder --rm -it -v .:/mnt aerobuilder
+	docker image rm aerobuilder
+
 build:
 	zig build --release=fast
 	rm bin/EFI/BOOT/bootx64.pdb
