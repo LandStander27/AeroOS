@@ -9,7 +9,9 @@ var inited = false;
 
 const io = @import("io.zig");
 const log = @import("log.zig");
-const fblib = @import("fb.zig");
+const fb = @import("fb.zig");
+
+var fb_base: [*]u32 = undefined;
 
 pub const VideoMode = struct {
 	_index: u32,
@@ -65,22 +67,21 @@ pub fn init() !void {
 	log.finish_task();
 	// try @import("time.zig").sleepms(350);
 	inited = true;
+	fb_base = @ptrFromInt(gop.?.mode.frame_buffer_base);
 }
 
 pub fn draw_pixel(x: u64, y: u64, color: Color) void {
 	if (x >= gop.?.mode.info.horizontal_resolution or y >= gop.?.mode.info.vertical_resolution or x < 0 or y < 0) {
 		return;
 	}
-	var fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
-	fb[x + y * gop.?.mode.info.pixels_per_scan_line] = color.to_raw();
+	fb_base[x + y * gop.?.mode.info.pixels_per_scan_line] = color.to_raw();
 }
 
 pub fn get_pixel(x: u64, y: u64) Color {
 	if (x >= gop.?.mode.info.horizontal_resolution or y >= gop.?.mode.info.vertical_resolution or x < 0 or y < 0) {
 		return Color{ .r = 0, .g = 0, .b = 0 };
 	}
-	const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
-	return Color.from_raw(fb[x + y * gop.?.mode.info.pixels_per_scan_line]);
+	return Color.from_raw(fb_base[x + y * gop.?.mode.info.pixels_per_scan_line]);
 }
 
 const Direction = enum {
@@ -133,10 +134,9 @@ pub const State = struct {
 		var buf = try alloc.alloc(u32, gop.?.mode.info.horizontal_resolution * gop.?.mode.info.vertical_resolution);
 		errdefer alloc.free(buf);
 
-		const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
 
 		for (0..buf.len) |i| {
-			buf[i] = fb[i];
+			buf[i] = fb_base[i];
 		}
 
 		return .{
@@ -147,10 +147,9 @@ pub const State = struct {
 	}
 
 	pub fn load(self: *const State) void {
-		const fb: [*]u32 = @ptrFromInt(gop.?.mode.frame_buffer_base);
 
 		for (0..self.buf.len) |i| {
-			fb[i] = self.buf[i];
+			fb_base[i] = self.buf[i];
 		}
 	}
 
@@ -214,7 +213,7 @@ pub const Framebuffer = struct {
 	}
 
 	pub fn draw_char(self: *Framebuffer, c: u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
-		for (fblib.font[c], 0..) |row, i| {
+		for (fb.font[c], 0..) |row, i| {
 			for (row, 0..) |pixel, j| {
 				self.draw_pixel(x+8+j, y+i, if (pixel) color else bg_color orelse Color{ .r = 0, .g = 0, .b = 0 });
 			}

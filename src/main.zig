@@ -313,7 +313,8 @@ fn entry() !Request {
 			try fb.println("{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "allocate")) {
 
-			
+			const size = std.fmt.parseInt(usize, args[1], 10) catch 0;
+			_ = try alloc.alloc(u8, size);
 
 		} else if (std.mem.eql(u8, args[0], "clear")) {
 			fb.clear();
@@ -678,15 +679,23 @@ fn kernel_panic(comptime format: []const u8, args: anytype) noreturn {
 
 fn enter_loop() noreturn {
 	bs.exit_services() catch {
-		print_either("EXIT SERVICES FAILED");
+		// print_either("EXIT SERVICES FAILED");
+		// graphics.draw_rectangle(5, 5, 10, 10, fb.Red);
 
 		while (true) {
-			sleepms(5000) catch {};
+			asm volatile ("hlt");
 		}
 
 	};
 
-	// print_either("KERNEL LOOP");
+	// graphics.draw_rectangle(5, 5, 10, 10, fb.Green);
+
+	// _ = bs.init() catch {
+	// 	fb.puts("INIT FAILED");
+	// };
+	// fb.puts("done");
+
+	print_either("Reached target kernel loop");
 
 	while (true) {
 		// if (graphics.has_inited()) {
@@ -742,6 +751,7 @@ pub fn main() void {
 
 	};
 
+	print_either("Reached target entry");
 	const req = entry() catch |e| {
 		// printf_either("KERNEL PANIC: {any}", .{e});
 		// enter_loop();
@@ -756,11 +766,12 @@ pub fn main() void {
 	fs.umount_root() catch |e| {
 		kernel_panic("On root umount: {any}", .{e});
 	};
-	sleepms(1000) catch {};
 
 	switch (req) {
 		Request.Exit => {},
 		Request.Shutdown => {
+			print_either("Reached target shutdown");
+			sleepms(1000) catch {};
 			bs.exit_services() catch {
 				print_either("EXIT SERVICES FAILED");
 				sleepms(5000) catch {};
@@ -768,6 +779,8 @@ pub fn main() void {
 			bs.shutdown();
 		},
 		Request.Reboot => {
+			print_either("Reached target reboot");
+			sleepms(1000) catch {};
 			bs.exit_services() catch {
 				print_either("EXIT SERVICES FAILED");
 				sleepms(5000) catch {};
@@ -776,6 +789,19 @@ pub fn main() void {
 		},
 		else => {}
 	}
+
+	// bs.exit_services() catch {
+	// 	print_either("EXIT SERVICES FAILED");
+
+	// 	while (true) {
+	// 		sleepms(5000) catch {};
+	// 	}
+
+	// };
+
+	enter_loop();
+
+	// enter_loop();
 
 }
 
