@@ -10,6 +10,18 @@ pub fn init() !*uefi.tables.BootServices {
 	return uefi.system_table.boot_services.?;
 }
 
+pub fn hardware_reboot() noreturn {
+	uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetCold, uefi.Status.Success, 0, null);
+}
+
+pub fn software_reboot() noreturn {
+	uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetWarm, uefi.Status.Success, 0, null);
+}
+
+pub fn shutdown() noreturn {
+	uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetShutdown, uefi.Status.Success, 0, null);
+}
+
 pub fn disable_watchdog() !void {
 	const bs = try init();
 	const res = bs.setWatchdogTimer(0, 0, 0, null);

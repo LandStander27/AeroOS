@@ -7,7 +7,9 @@ const bs = @import("boot_services.zig");
 var gop: ?*uefi.protocol.GraphicsOutput = null;
 var inited = false;
 
+const io = @import("io.zig");
 const log = @import("log.zig");
+const fblib = @import("fb.zig");
 
 pub const VideoMode = struct {
 	_index: u32,
@@ -125,6 +127,7 @@ pub fn clear() void {
 pub const State = struct {
 	alloc: heap.Allocator,
 	buf: []u32,
+	inited: bool,
 
 	pub fn init(alloc: heap.Allocator) !State {
 		var buf = try alloc.alloc(u32, gop.?.mode.info.horizontal_resolution * gop.?.mode.info.vertical_resolution);
@@ -139,6 +142,7 @@ pub const State = struct {
 		return .{
 			.alloc = alloc,
 			.buf = buf,
+			.inited = true
 		};
 	}
 
@@ -150,8 +154,9 @@ pub const State = struct {
 		}
 	}
 
-	pub fn deinit(self: *const State) void {
+	pub fn deinit(self: *State) void {
 		self.alloc.free(self.buf);
+		self.inited = false;
 	}
 
 };
@@ -173,6 +178,13 @@ pub const Framebuffer = struct {
 		return self;
 	}
 
+	pub fn load_state(self: *Framebuffer, state: State) void {
+		for (0..self.framebuffer.len) |i| {
+			const color = Color.from_raw(state.buf[i]);
+			self.framebuffer[i] = color.to_gop();
+		}
+	}
+
 	pub fn update(self: *Framebuffer) !void {
 		const res = gop.?.blt(self.framebuffer.ptr, uefi.protocol.GraphicsOutput.BltOperation.BltBufferToVideo, 0, 0, 0, 0, gop.?.mode.info.horizontal_resolution, gop.?.mode.info.vertical_resolution, 0);
 		if (res != uefi.Status.Success) {
@@ -187,14 +199,64 @@ pub const Framebuffer = struct {
 
 	pub fn clear(self: *Framebuffer) void {
 		const black = Color{ .r = 0, .g = 0, .b = 0 };
-		const black_gop = black.to_gop();
+		self.clear_color(black);
+	}
+
+	pub fn clear_color(self: *Framebuffer, color: Color) void {
+		const color_gop = color.to_gop();
 		for (0..self.framebuffer.len) |i| {
-			self.framebuffer[i] = black_gop;
+			self.framebuffer[i] = color_gop;
 		}
 	}
 
 	pub fn draw_pixel(self: *Framebuffer, x: u64, y: u64, color: Color) void {
 		self.framebuffer[x + y * gop.?.mode.info.pixels_per_scan_line] = color.to_gop();
+	}
+
+	pub fn draw_char(self: *Framebuffer, c: u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
+		for (fblib.font[c], 0..) |row, i| {
+			for (row, 0..) |pixel, j| {
+				self.draw_pixel(x+8+j, y+i, if (pixel) color else bg_color orelse Color{ .r = 0, .g = 0, .b = 0 });
+			}
+		}
+	}
+
+	pub fn draw_text(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
+		var x2 = x;
+		var y2 = y;
+
+		for (text) |c| {
+			self.draw_char(c, x2, y2, color, bg_color);
+			if (c == '\n') {
+				y2 += 16;
+				x2 = x;
+			} else {
+				x2 += 8;
+			}
+		}
+	}
+
+	pub fn draw_text_centered(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
+		var each_line = std.mem.split(u8, text, "\n");
+
+		var y2 = y;
+
+		while (each_line.next()) |line| {
+			self.draw_text(line, x - (line.len*8)/2, y2 + 8, color, bg_color);
+			y2 += 16;
+		}
+	}
+
+	pub fn draw_textf(self: *Framebuffer, comptime format: []const u8, args: anytype, x: u64, y: u64, color: Color, bg_color: ?Color) !void {
+		const msg = try io.alloc_print(self.alloc, format, args);
+		defer self.alloc.free(msg);
+		self.draw_text(msg, x, y, color, bg_color);
+	}
+
+	pub fn draw_text_centeredf(self: *Framebuffer, comptime format: []const u8, args: anytype, x: u64, y: u64, color: Color, bg_color: ?Color) !void {
+		const msg = try io.alloc_print(self.alloc, format, args);
+		defer self.alloc.free(msg);
+		self.draw_text_centered(msg, x, y, color, bg_color);
 	}
 
 	pub fn draw_rectangle(self: *Framebuffer, x: u64, y: u64, width: u64, height: u64, color: Color) void {

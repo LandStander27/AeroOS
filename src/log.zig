@@ -51,3 +51,16 @@ pub fn error_task() void {
 		io.println("Failed   ", .{}) catch {};
 	}
 }
+
+pub fn error_task_msg(comptime format: []const u8, args: anytype) void {
+	if (graphics.has_inited()) {
+		fb.set_color(fb.Red);
+		fb.print("Failed: ", .{}) catch {};
+		fb.set_color(fb.White);
+		fb.println(format, args) catch {};
+	} else {
+		io.print("Failed: ", .{}) catch {};
+		fb.println(format, args) catch {};
+	}
+}
+

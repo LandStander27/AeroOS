@@ -9,7 +9,7 @@ const Color = graphics.Color;
 const font_width: u64 = 8;
 const font_height: u64 = 16;
 
-const font = blk: {
+pub const font = blk: {
 
 	@setEvalBranchQuota(100000);
 
@@ -111,7 +111,7 @@ fn putchar(c: u8) void {
 	}
 }
 
-pub fn puts(str: []const u8) !void {
+pub fn puts(str: []const u8) void {
 
 	const max_column: u64 = graphics.current_resolution().width / (font_width+font_padding) - 2;
 	const max_row: u64 = graphics.current_resolution().height / (font_height+font_padding) - 2;
@@ -177,19 +177,19 @@ pub fn print(comptime format: []const u8, args: anytype) !void {
     const fields_info = args_type_info.Struct.fields;
 
 	if (fields_info.len == 0) {
-		try puts(format);
+		puts(format);
 		return;
 	}
 
 	const alloc = heap.Allocator.init();
 	const buf = try alloc_print(alloc, format, args);
-	try puts(buf);
+	puts(buf);
 	alloc.free(buf);
 }
 
 pub fn println(comptime format: []const u8, args: anytype) !void {
 	try print(format, args);
-	try puts("\n");
+	puts("\n");
 }
 
 /// Gets characters until newline.

@@ -23,4 +23,4 @@ run:
 	qemu-system-x86_64 -bios /usr/share/ovmf/x64/OVMF.fd -cdrom boot.iso -m 4G -device virtio-rng-pci
 
 clean:
-	rm -rf bin .zig-cache
+	rm -rf bin .zig-cache zig-out
