@@ -18,7 +18,7 @@ pub const Allocator = struct {
 	}
 
 	pub fn alloc(_: *const Allocator, comptime T: type, count: usize) ![]T {
-		if (count == 0) return &[0]T{};
+		// if (count == 0) return &[0]T{};
 		var memory: [*]align(8) T = undefined;
 		const res = (try bs.init()).allocatePool(uefi.tables.MemoryType.BootServicesData, count * @sizeOf(T), @ptrCast(&memory));
 		if (res != uefi.Status.Success) {

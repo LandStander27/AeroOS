@@ -18,7 +18,7 @@ docker:
 	docker image rm aerobuilder
 
 build:
-	zig build --release=fast
+	zig build --release=safe
 	rm bin/EFI/BOOT/bootx64.pdb
 	-mdel -i bin/EFI/BOOT/boot.img ::EFI/BOOT/bootx64.efi
 	mcopy -i bin/EFI/BOOT/boot.img bin/EFI/BOOT/bootx64.efi ::EFI/BOOT

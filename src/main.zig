@@ -253,6 +253,8 @@ fn entry() !Request {
 		try fb.println("Warning! Firmware does not support RNG.\nAll random numbers generated will not be random.", .{});
 	}
 
+	try fb.println("Run `help` for help", .{});
+
 	if (snake_on_boot) {
 		try fb.println("Booting directly into snake...", .{});
 		fb.set_color(fb.Cyan);
@@ -307,23 +309,26 @@ fn entry() !Request {
 				\\date                  Print date
 				\\snake                 Start a builtin snake game
 				\\getkey                Print keypress info
-				\\allocate <size>       Allocate <size> bytes on heap (for debugging)
+				\\allocate <size>       Allocate <size> bytes on heap. In other words, artificially creates a memory leak (for debugging)
 				\\panic <str>           Initiate a kernel panic with message <str>
 			;
 			try fb.println("{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "allocate")) {
 
+			if (args.len == 1) {
+				try fb.println("Invalid usage", .{});
+			}
 			const size = std.fmt.parseInt(usize, args[1], 10) catch 0;
 			_ = try alloc.alloc(u8, size);
 
 		} else if (std.mem.eql(u8, args[0], "clear")) {
 			fb.clear();
 		} else if (std.mem.eql(u8, args[0], "shutdown")) {
-			try fb.println("Shutting down...", .{});
+			// try fb.println("Shutting down...", .{});
 			return Request.Shutdown;
 			// uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetShutdown, uefi.Status.Success, 0, null);
 		} else if (std.mem.eql(u8, args[0], "reboot")) {
-			try fb.println("Rebooting...", .{});
+			// try fb.println("Rebooting...", .{});
 			return Request.Reboot;
 			// uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetCold, uefi.Status.Success, 0, null);
 		} else if (std.mem.eql(u8, args[0], "leaks")) {
