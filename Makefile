@@ -22,10 +22,10 @@ build:
 	rm bin/EFI/BOOT/bootx64.pdb
 	-mdel -i bin/EFI/BOOT/boot.img ::EFI/BOOT/bootx64.efi
 	mcopy -i bin/EFI/BOOT/boot.img bin/EFI/BOOT/bootx64.efi ::EFI/BOOT
-	$(prog) -o boot.iso -R -J -v -d -N -no-emul-boot -eltorito-platform efi -eltorito-boot EFI/BOOT/boot.img -V "BOOT" -A "Boot" bin
+	$(prog) -o AeroOS.iso -R -J -v -d -N -no-emul-boot -eltorito-platform efi -eltorito-boot EFI/BOOT/boot.img -V "BOOT" -A "Boot" bin
 
 run:
-	qemu-system-x86_64 -bios /usr/share/ovmf/x64/OVMF.fd -cdrom boot.iso -m 4G -device virtio-rng-pci
+	qemu-system-x86_64 -bios /usr/share/ovmf/x64/OVMF.fd -cdrom AeroOS.iso -m 4G -device virtio-rng-pci
 
 clean:
 	rm -rf bin .zig-cache zig-out

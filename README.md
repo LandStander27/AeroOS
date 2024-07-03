@@ -11,13 +11,13 @@
 3. Building
 	* Arch Linux: `make all`
 	* Debian: `make all prog="xorriso -as mkisofs"`
-4. ISO is built to `./boot.iso`.
+4. ISO is built to `./AeroOS.iso`.
 
 ##### Docker
 1. Install docker and GNU make
 2. `git clone https://github.com/LandStander27/AeroOS && cd AeroOS`
 3. `make docker`
-4. ISO is built to `./boot.iso`.
+4. ISO is built to `./AeroOS.iso`.
 
 ##### Running
 1. Install QEMU/KVM
