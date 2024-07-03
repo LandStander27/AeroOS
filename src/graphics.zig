@@ -212,20 +212,20 @@ pub const Framebuffer = struct {
 		self.framebuffer[x + y * gop.?.mode.info.pixels_per_scan_line] = color.to_gop();
 	}
 
-	pub fn draw_char(self: *Framebuffer, c: u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
+	pub fn draw_char(self: *Framebuffer, c: u8, x: u64, y: u64, color: ?Color, bg_color: ?Color) void {
 		for (fb.font[c], 0..) |row, i| {
 			for (row, 0..) |pixel, j| {
-				self.draw_pixel(x+8+j, y+i, if (pixel) color else bg_color orelse Color{ .r = 0, .g = 0, .b = 0 });
+				self.draw_pixel(x+8+j, y+i, if (pixel) color orelse Color{ .r = 255, .g = 255, .b = 255 } else bg_color orelse Color{ .r = 0, .g = 0, .b = 0 });
 			}
 		}
 	}
 
-	pub fn draw_text(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
+	pub fn draw_text(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: ?Color, bg_color: ?Color) void {
 		var x2 = x;
 		var y2 = y;
 
 		for (text) |c| {
-			self.draw_char(c, x2, y2, color, bg_color);
+			self.draw_char(c, x2, y2, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
 			if (c == '\n') {
 				y2 += 16;
 				x2 = x;
@@ -235,27 +235,27 @@ pub const Framebuffer = struct {
 		}
 	}
 
-	pub fn draw_text_centered(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: Color, bg_color: ?Color) void {
+	pub fn draw_text_centered(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: ?Color, bg_color: ?Color) void {
 		var each_line = std.mem.split(u8, text, "\n");
 
 		var y2 = y;
 
 		while (each_line.next()) |line| {
-			self.draw_text(line, x - (line.len*8)/2, y2 + 8, color, bg_color);
+			self.draw_text(line, x - (line.len*8)/2, y2 + 8, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
 			y2 += 16;
 		}
 	}
 
-	pub fn draw_textf(self: *Framebuffer, comptime format: []const u8, args: anytype, x: u64, y: u64, color: Color, bg_color: ?Color) !void {
+	pub fn draw_textf(self: *Framebuffer, comptime format: []const u8, args: anytype, x: u64, y: u64, color: ?Color, bg_color: ?Color) !void {
 		const msg = try io.alloc_print(self.alloc, format, args);
 		defer self.alloc.free(msg);
-		self.draw_text(msg, x, y, color, bg_color);
+		self.draw_text(msg, x, y, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
 	}
 
-	pub fn draw_text_centeredf(self: *Framebuffer, comptime format: []const u8, args: anytype, x: u64, y: u64, color: Color, bg_color: ?Color) !void {
+	pub fn draw_text_centeredf(self: *Framebuffer, comptime format: []const u8, args: anytype, x: u64, y: u64, color: ?Color, bg_color: ?Color) !void {
 		const msg = try io.alloc_print(self.alloc, format, args);
 		defer self.alloc.free(msg);
-		self.draw_text_centered(msg, x, y, color, bg_color);
+		self.draw_text_centered(msg, x, y, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
 	}
 
 	pub fn draw_rectangle(self: *Framebuffer, x: u64, y: u64, width: u64, height: u64, color: Color) void {

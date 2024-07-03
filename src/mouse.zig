@@ -24,8 +24,15 @@ pub fn init() !void {
 pub fn get_position() ![2]i32 {
 
 	var state: uefi.protocol.SimplePointer.State = undefined;
-	if (spp.?.getState(&state) != uefi.Status.Success) {
-		return error.CouldNotGetState;
+	const res = spp.?.getState(&state);
+
+	if (res == uefi.Status.NotReady) {
+		const clone = [2]i32{ pos[0], pos[1] };
+		return clone;
+	}
+
+	if (res != uefi.Status.Success) {
+		try res.err();
 	}
 
 	pos[0] += state.relative_movement_x;

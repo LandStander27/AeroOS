@@ -129,8 +129,8 @@ const Request = enum {
 	Exit,
 };
 
-fn game(alloc: heap.Allocator) !void {
-	log.new_task("Game");
+fn snake(alloc: heap.Allocator) !void {
+	log.new_task("Snake");
 	errdefer log.error_task();
 
 	var state = try graphics.State.init(alloc);
@@ -140,6 +140,30 @@ fn game(alloc: heap.Allocator) !void {
 	fb.set_cursor_pos(0, 0);
 
 	@import("snake.zig").start(alloc) catch |e| {
+		state.load();
+		fb.set_cursor_pos(pos.x, pos.y);
+		log.error_task();
+		try fb.println("Error: {s}", .{@errorName(e)});
+		return;
+	};
+
+	state.load();
+	fb.set_cursor_pos(pos.x, pos.y);
+
+	log.finish_task();
+}
+
+fn gol(alloc: heap.Allocator) !void {
+	log.new_task("GameOfLife");
+	errdefer log.error_task();
+
+	var state = try graphics.State.init(alloc);
+	defer state.deinit();
+
+	const pos = fb.get_cursor_pos();
+	fb.set_cursor_pos(0, 0);
+
+	@import("gol.zig").start(alloc) catch |e| {
 		state.load();
 		fb.set_cursor_pos(pos.x, pos.y);
 		log.error_task();
@@ -262,7 +286,7 @@ fn entry() !Request {
 		fb.set_color(fb.White);
 		try fb.println("snake", .{});
 		try sleepms(1000);
-		try game(alloc);
+		try snake(alloc);
 	}
 
 	outer: while (true) {
@@ -398,7 +422,9 @@ fn entry() !Request {
 			}
 
 		} else if (std.mem.eql(u8, args[0], "snake")) {
-			try game(alloc);
+			try snake(alloc);
+		} else if (std.mem.eql(u8, args[0], "gameoflife")) {
+			try gol(alloc);
 		} else if (std.mem.eql(u8, args[0], "getkey")) {
 
 			var key: ?io.Key = null;
