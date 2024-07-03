@@ -742,13 +742,17 @@ fn enter_loop() noreturn {
 fn printf_either(comptime format: []const u8, args: anytype) void {
 	if (graphics.has_inited()) {
 		fb.println(format, args) catch {
-			io.println(format, args) catch {
+			if (io.has_inited()) {
+				io.println(format, args) catch {
+					print_either(format);
+				};
+			} else {
 				print_either(format);
-			};
+			}
 		};
 	} else {
 		io.println(format, args) catch {
-			io.puts(format ++ "\n");
+			print_either(format);
 		};
 	}
 }
@@ -756,8 +760,17 @@ fn printf_either(comptime format: []const u8, args: anytype) void {
 fn print_either(comptime format: []const u8) void {
 	if (graphics.has_inited()) {
 		fb.puts(format ++ "\n");
-	} else {
+	} else if (io.has_inited()) {
 		io.puts(format ++ "\n");
+	} else {
+		for (format ++ "\n") |c| {
+			if (c == '\n') {
+				_ = uefi.system_table.con_out.?.outputString(&[2:0]u16{ '\r', 0 });
+			}
+
+			const c_ = [2]u16{ c, 0 };
+			_ = uefi.system_table.con_out.?.outputString(@ptrCast(&c_));
+		}
 	}
 }
 
@@ -770,16 +783,9 @@ pub fn main() void {
 		_ = uefi.system_table.con_out.?.outputString(@ptrCast(&c_));
 	}
 
-	io.init_io() catch {
-		for ("COULD NOT INIT IO\r\n") |c| {
-			const c_ = [2]u16{ c, 0 };
-			_ = uefi.system_table.con_out.?.outputString(@ptrCast(&c_));
-		}
-
-		while (true) {
-			asm volatile ("hlt");
-		}
-
+	io.init_io() catch |e| {
+		print_either("COULD NOT INIT IO");
+		@panic(@errorName(e));
 	};
 
 	print_either("Reached target entry");
@@ -821,18 +827,7 @@ pub fn main() void {
 		else => {}
 	}
 
-	// bs.exit_services() catch {
-	// 	print_either("EXIT SERVICES FAILED");
-
-	// 	while (true) {
-	// 		sleepms(5000) catch {};
-	// 	}
-
-	// };
-
 	enter_loop();
-
-	// enter_loop();
 
 }
 

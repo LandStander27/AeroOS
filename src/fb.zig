@@ -70,13 +70,34 @@ pub fn set_cursor_pos(x: u64, y: u64) void {
 pub fn down(amount: i64) void {
 	var a: i64 = @intCast(cursor_pos[1]);
 	a += amount;
+
+	const max_row: u64 = graphics.current_resolution().height / (font_height+font_padding) - 2;
+
+	if (a >= max_row - 2) {
+		graphics.scroll(font_height, .Down);
+		a -= 1;
+	}
+
 	cursor_pos[1] = @intCast(a);
+
 }
 
 pub fn right(amount: i64) void {
 	var a: i64 = @intCast(cursor_pos[0]);
 	a += amount;
+
+	const max_column: u64 = graphics.current_resolution().width / (font_width+font_padding) - 2;
+
+	if (a >= max_column) {
+		down(1); // cursor_pos[1] += 1;
+		a = 0;
+	} else if (a <= -1) {
+		down(-1);
+		a = @intCast(max_column - 1);
+	}
+
 	cursor_pos[0] = @intCast(a);
+
 }
 
 fn to_coord(x: u64, y: u64) [2]u64 {
@@ -113,26 +134,40 @@ fn putchar(c: u8) void {
 
 pub fn puts(str: []const u8) void {
 
-	const max_column: u64 = graphics.current_resolution().width / (font_width+font_padding) - 2;
-	const max_row: u64 = graphics.current_resolution().height / (font_height+font_padding) - 2;
+	// const max_column: u64 = graphics.current_resolution().width / (font_width+font_padding) - 2;
 
 	for (str) |c| {
 		if (c == '\n') {
 			putchar(' ');
 			cursor_pos[0] = 0;
-			cursor_pos[1] += 1;
+			down(1); // cursor_pos[1] += 1;
 			continue;
 		} else if (c == 8) {
 			if (cursor_pos[0] == 0 and cursor_pos[1] == 0) {
 				continue;
 			}
 			putchar(' ');
-			if (cursor_pos[0] != 0) {
-				cursor_pos[0] -= 1;
-			} else {
-				cursor_pos[1] -= 1;
-				cursor_pos[0] = max_column;
-			}
+			right(-1);
+			// if (cursor_pos[0] > 0) {
+			// 	right(-1);
+			// } else {
+			// 	cursor_pos[0] -= 1;
+			// 	putchar(' ');
+			// 	cursor_pos[0] += 1;
+			// 	right(-1);
+			// }
+			// if (cursor_pos[0] > 1) {
+			// 	right(-1); // cursor_pos[0] -= 1;
+			// } else {
+			// 	// if (cursor_pos[0] != 0) {
+			// 	// 	cursor_pos[0] -= 1;
+			// 	// 	putchar(' ');
+			// 	// 	cursor_pos[0] += 1;
+			// 	// }
+			// 	right(-1);
+			// 	// down(-1); // cursor_pos[1] -= 1;
+			// 	cursor_pos[0] = max_column;
+			// }
 			put_cursor();
 			continue;
 		} else if (c == '\r') {
@@ -141,17 +176,7 @@ pub fn puts(str: []const u8) void {
 			continue;
 		}
 		putchar(c);
-		if (cursor_pos[0] >= max_column) {
-			cursor_pos[1] += 1;
-			cursor_pos[0] = 0;
-		} else if (cursor_pos[1] >= max_row - 2) {
-			graphics.scroll(font_height, .Down);
-			cursor_pos[1] -= 1;
-			putchar(c);
-			cursor_pos[0] += 1;
-		} else {
-			cursor_pos[0] += 1;
-		}
+		right(1); // cursor_pos[0] += 1;
 	}
 	put_cursor();
 }
@@ -196,6 +221,8 @@ pub fn println(comptime format: []const u8, args: anytype) !void {
 /// Caller owns and must free memory.
 pub fn getline(alloc: heap.Allocator) ![]u8 {
 
+	// const max_column: u64 = graphics.current_resolution().width / (font_width+font_padding) - 2;
+
 	var buf = try alloc.alloc(u8, 32);
 	errdefer alloc.free(buf);
 	var len: usize = 0;
@@ -222,12 +249,25 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 
 			if (key.?.unicode.char == 'u' and key.?.ctrl) {
 				putchar(' ');
-				cursor_pos[0] -= 1;
+				right(-1); // cursor_pos[0] -= 1;
 				for (0..len) |_| {
 					putchar(' ');
-					cursor_pos[0] -= 1;
+
+					// if (cursor_pos[0] > 1) {
+					// 	right(-1); // cursor_pos[0] -= 1;
+					// } else {
+					// 	if (cursor_pos[0] != 0) {
+					// 		cursor_pos[0] -= 1;
+					// 		putchar(' ');
+					// 		cursor_pos[0] += 1;
+					// 	}
+					// 	right(-1);
+					// 	// down(-1); // cursor_pos[1] -= 1;
+					// 	cursor_pos[0] = max_column;
+					// }
+					right(-1); // cursor_pos[0] -= 1;
 				}
-				cursor_pos[0] += 1;
+				right(1); // cursor_pos[0] += 1;
 				len = 0;
 				put_cursor();
 				continue;
