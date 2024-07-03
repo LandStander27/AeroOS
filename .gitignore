@@ -1,5 +1,6 @@
 /zig-out/
 /.zig-cache/
-/boot.iso
+/AeroOS.iso
 /EFI/
 /bin/
+/extra/
