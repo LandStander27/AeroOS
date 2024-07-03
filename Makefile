@@ -1,5 +1,5 @@
 prog = "mkisofs"
-dockerflags = ""
+dockerflags =
 
 all:
 	make setup
