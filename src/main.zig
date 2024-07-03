@@ -614,7 +614,7 @@ fn kernel_panic_raw(msg: []const u8) noreturn {
 			fb.puts("OBJECTS ON HEAP: ");
 			fb.print("{d}\n", .{heap.amount}) catch {
 				io.println("{d}", .{heap.amount}) catch {
-					io.puts("COULD NOT PRINT OBJECTS ON HEAP");
+					io.puts("COULD NOT PRINT OBJECTS ON HEAP\n");
 				};
 			};
 			fb.set_color(fb.White);
@@ -626,7 +626,7 @@ fn kernel_panic_raw(msg: []const u8) noreturn {
 		io.puts("\n");
 		io.puts("OBJECTS ON HEAP: ");
 		io.print("{d}\n", .{heap.amount}) catch {
-			io.puts("COULD NOT PRINT OBJECTS ON HEAP");
+			io.puts("COULD NOT PRINT OBJECTS ON HEAP\n");
 		};
 	}
 
