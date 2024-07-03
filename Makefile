@@ -14,7 +14,7 @@ setup:
 
 docker:
 	docker build -t aerobuilder .
-	docker run -h aerobuilder --name aerobuilder --rm -it -v .:/mnt aerobuilder
+	docker run -h aerobuilder --name aerobuilder --rm -v .:/mnt aerobuilder
 	docker image rm aerobuilder
 
 build:
