@@ -1,4 +1,5 @@
 prog = "mkisofs"
+dockerflags = ""
 
 all:
 	make setup
@@ -14,7 +15,7 @@ setup:
 
 docker:
 	docker build -t aerobuilder .
-	docker run -h aerobuilder --name aerobuilder --rm -v .:/mnt aerobuilder
+	docker run -h aerobuilder --name aerobuilder $(dockerflags) --rm -v .:/mnt aerobuilder
 	docker image rm aerobuilder
 
 build:
