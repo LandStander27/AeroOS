@@ -7,6 +7,7 @@ const sleepms = time.sleepms;
 
 const heap = @import("heap.zig");
 const graphics = @import("graphics.zig");
+const fb = @import("fb.zig");
 const Color = graphics.Color;
 
 const rng = @import("rand.zig");
@@ -53,27 +54,27 @@ const Direction = enum {
 	Right,
 };
 
-const font = blk: {
+// const fb.font = blk: {
 
-	@setEvalBranchQuota(100000);
+// 	@setEvalBranchQuota(100000);
 
-	const data = @embedFile("./assets/vga16.psf")[4..];
-	var ret: [512][16][8]bool = undefined;
+// 	const data = @embedFile("./assets/vga16.psf")[4..];
+// 	var ret: [512][16][8]bool = undefined;
 
-	for (&ret, 0..) |*char, i| {
-		for (char, 0..) |*row, j| {
-			for (row, 0..) |*pixel, k| {
-				pixel.* = data[i * 16 + j] & 0b10000000 >> k != 0;
-			}
-		}
-	}
+// 	for (&ret, 0..) |*char, i| {
+// 		for (char, 0..) |*row, j| {
+// 			for (row, 0..) |*pixel, k| {
+// 				pixel.* = data[i * 16 + j] & 0b10000000 >> k != 0;
+// 			}
+// 		}
+// 	}
 
-	break :blk ret;
+// 	break :blk ret;
 
-};
+// };
 
 fn draw_char(frame: *graphics.Framebuffer, c: u8, x: u64, y: u64) void {
-	for (font[c], 0..) |row, i| {
+	for (fb.font[c], 0..) |row, i| {
 		for (row, 0..) |pixel, j| {
 			frame.draw_pixel(x+8+j, y+i, if (pixel) Color{ .r = 255, .g = 255, .b = 255 } else Color{ .r = 0, .g = 0, .b = 0 });
 		}

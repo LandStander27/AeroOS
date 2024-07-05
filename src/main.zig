@@ -25,6 +25,7 @@ const rng = @import("rand.zig");
 const network = @import("network.zig");
 
 const snake_on_boot: bool = false;
+const choose_resolution: bool = false;
 
 fn digit_amount(n: u64) u64 {
 	var amount: u64 = 0;
@@ -208,7 +209,7 @@ fn entry() !Request {
 			try io.print(" ", .{});
 		}
 		try io.println("{d} x {d}", .{ res.width, res.height });
-		if (res.width == 1920 and res.height == 1080) {
+		if (res.width == 1920 and res.height == 1080 and choose_resolution) {
 			default = i;
 		}
 	}
@@ -424,7 +425,8 @@ fn entry() !Request {
 		} else if (std.mem.eql(u8, args[0], "snake")) {
 			try snake(alloc);
 		} else if (std.mem.eql(u8, args[0], "gameoflife")) {
-			try gol(alloc);
+			try fb.println("Not implemented", .{});
+			// try gol(alloc);
 		} else if (std.mem.eql(u8, args[0], "getkey")) {
 
 			var key: ?io.Key = null;
