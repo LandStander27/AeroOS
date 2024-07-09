@@ -270,11 +270,6 @@ fn entry() !Request {
 
 	network.init() catch {};
 
-	// var current_path = try ArrayList(u8).init(alloc);
-	// defer current_path.deinit();
-
-	// try current_path.append('/');
-
 	if (rng.get_mode() == .NonRandom) {
 		try fb.println("Warning! Firmware does not support RNG.\nAll random numbers generated will not be random.", .{});
 	}
@@ -352,6 +347,11 @@ fn entry() !Request {
 			const size = std.fmt.parseInt(usize, args[1], 10) catch 0;
 			_ = try alloc.alloc(u8, size);
 
+		} else if (std.mem.eql(u8, args[0], "loadfont")) {
+
+			// fb.clear();
+			// try fb.load_font(alloc, 8, 16, args[1]);
+
 		} else if (std.mem.eql(u8, args[0], "clear")) {
 			fb.clear();
 		} else if (std.mem.eql(u8, args[0], "shutdown")) {
@@ -395,13 +395,40 @@ fn entry() !Request {
 				fb.println("Error: Could not close directory", .{}) catch {};
 			};
 
+			var max_size_len: usize = 0;
+
 			while (dir.next() catch |e| {
 				try fb.println("Error: Could not read directory: {s}", .{@errorName(e)});
 				continue;
 			}) |dirent| {
 				defer dirent.free();
-				try fb.println("{s}", .{dirent.filename});
+				const size = std.fmt.count("{d}", .{dirent.size});
+				if (size > max_size_len) {
+					max_size_len = size;
+				}
 			}
+
+			try dir.restart();
+
+			while (dir.next() catch |e| {
+				try fb.println("Error: Could not read directory: {s}", .{@errorName(e)});
+				continue;
+			}) |dirent| {
+				defer dirent.free();
+				try fb.print("{d}", .{dirent.size});
+				for (0..max_size_len-std.fmt.count("{d}", .{dirent.size})) |_| {
+					try fb.print(" ", .{});
+				}
+				if (dirent.filetype == .Directory) {
+					fb.set_color(fb.Cyan);
+				} else {
+					fb.set_color(fb.White);
+				}
+				try fb.println("  {s}", .{dirent.filename});
+				fb.set_color(fb.White);
+			}
+
+			try fb.print("\n", .{});
 
 		} else if (std.mem.eql(u8, args[0], "cat")) {
 

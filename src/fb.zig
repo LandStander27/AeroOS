@@ -2,6 +2,7 @@ const std = @import("std");
 
 const heap = @import("heap.zig");
 const io = @import("io.zig");
+const fs = @import("fs.zig");
 
 const graphics = @import("graphics.zig");
 const Color = graphics.Color;
@@ -27,6 +28,8 @@ pub const font = blk: {
 	break :blk ret;
 
 };
+
+// pub var font: [][][]bool = @ptrCast(@constCast(&builtin_font));
 
 const cursor = blk: {
 
@@ -54,6 +57,39 @@ pub const Cyan = Color{ .r = 0, .g = 255, .b = 255 };
 var current_color = White;
 
 var cursor_pos = [_]u64{0, 0};
+
+// pub fn load_font(alloc: heap.Allocator, width: u64, height: u64, font_name: []const u8) !void {
+
+// 	const path = try alloc_print(alloc, "/fonts/{s}.psf", .{font_name});
+// 	defer alloc.free(path);
+
+// 	const file = try fs.open_file(path, .Read);
+// 	defer file.close() catch {};
+
+// 	const all = try file.read_all_alloc();
+// 	defer alloc.free(all);
+
+// 	const data = all[4..];
+
+// 	var ret: [512][][]bool = undefined;
+
+// 	// var ret: [512][16][8]bool = undefined;
+
+// 	const num: i64 = 0b10000000;
+
+// 	for (&ret, 0..) |*char, i| {
+// 		char.* = try alloc.alloc([]bool, height);
+// 		for (char.*, 0..) |*row, j| {
+// 			row.* = try alloc.alloc(bool, width);
+// 			for (row.*, 0..) |*pixel, k| {
+// 				pixel.* = data[i * 16 + j] & num >> @intCast(k) != 0;
+// 			}
+// 		}
+// 	}
+
+// 	font = ret;
+
+// }
 
 pub fn get_cursor_pos() struct { x: u64, y: u64 } {
 	return .{

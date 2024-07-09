@@ -213,6 +213,16 @@ pub const Dir = struct {
 		}
 	}
 
+	pub fn restart(self: *const Self) !void {
+
+		const res = self.file.setPosition(0);
+		if (res != uefi.Status.Success) {
+			try res.err();
+			return error.CouldNotRestartDir;
+		}
+
+	}
+
 	pub fn next(self: *const Self) !?Info {
 		var size: usize = 64;
 

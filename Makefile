@@ -13,8 +13,9 @@ setup:
 	mmd -i bin/EFI/BOOT/boot.img ::EFI
 	mmd -i bin/EFI/BOOT/boot.img ::EFI/BOOT
 	mmd -i bin/EFI/BOOT/boot.img ::files
-	echo "Hello World!" > bin/files/test.txt
-	mcopy -i bin/EFI/BOOT/boot.img bin/files/test.txt ::files
+	# echo "Hello World!" > bin/files/test.txt
+	# mcopy -i bin/EFI/BOOT/boot.img bin/files/test.txt ::files
+	mcopy -s -i bin/EFI/BOOT/boot.img root/* ::
 
 docker:
 	docker build -t aerobuilder .
