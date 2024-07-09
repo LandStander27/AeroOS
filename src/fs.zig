@@ -277,11 +277,15 @@ fn convert(str: []const u8) !struct { buf : []u16, len : usize } {
 	}
 
 	if (str[0] != '/') {
-		prefix = try alloc.alloc(u8, cwd().len+1);
-		for (cwd(), 0..) |c, i| {
+		const wkdir = cwd();
+		prefix = try alloc.alloc(u8, wkdir.len);
+		for (wkdir, 0..) |c, i| {
 			prefix.?[i] = if (c != '/') c else '\\';
 		}
-		prefix.?[prefix.?.len-1] = '\\';
+		if (prefix.?[wkdir.len-1] != '\\') {
+			prefix = try alloc.realloc(u8, prefix.?, wkdir.len+1);
+			prefix.?[wkdir.len] = '\\';
+		}
 	}
 	var buf: []u16 = try alloc.alloc(u16, max_path);
 
