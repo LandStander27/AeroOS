@@ -44,7 +44,7 @@ pub const Allocator = struct {
 	pub fn free(_: *const Allocator, memory: anytype) void {
 		const res = (bs.init() catch {
 			@panic("Cannot free without boot services");
-		}).freePool(@alignCast(@ptrCast(memory.ptr)));
+		}).freePool(@alignCast(@ptrCast(@constCast(memory.ptr))));
 		if (res != uefi.Status.Success) {
 			if (graphics.has_inited()) {
 				fb.println("Unable to free memory", .{}) catch {

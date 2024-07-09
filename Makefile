@@ -7,11 +7,14 @@ all:
 	make clean
 
 setup:
-	mkdir -p bin/EFI/BOOT
+	mkdir -p bin/EFI/BOOT bin/files
 	dd if=/dev/zero of=bin/EFI/BOOT/boot.img bs=1M count=12
 	mkfs.msdos -F 12 -n 'BOOT' bin/EFI/BOOT/boot.img
 	mmd -i bin/EFI/BOOT/boot.img ::EFI
 	mmd -i bin/EFI/BOOT/boot.img ::EFI/BOOT
+	mmd -i bin/EFI/BOOT/boot.img ::files
+	echo "Hello World!" > bin/files/test.txt
+	mcopy -i bin/EFI/BOOT/boot.img bin/files/test.txt ::files
 
 docker:
 	docker build -t aerobuilder .

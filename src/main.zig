@@ -264,8 +264,9 @@ fn entry() !Request {
 
 	try pointer.init();
 
-	try fs.init();
+	try fs.init(alloc);
 	try fs.mount_root();
+	defer fs.deinit();
 
 	network.init() catch {};
 
@@ -292,8 +293,10 @@ fn entry() !Request {
 
 	outer: while (true) {
 
+		fb.set_color(fb.Orange);
+		try fb.print("{s}", .{fs.cwd()});
 		fb.set_color(fb.Cyan);
-		try fb.print("> ", .{});
+		try fb.print(" > ", .{});
 		fb.set_color(fb.White);
 		// try fb.print("> ", .{});
 		const inp = try fb.getline(alloc);
@@ -329,6 +332,9 @@ fn entry() !Request {
 				\\reboot                Reboot
 				\\leaks                 Show heap allocations
 				\\echo <str>            Print <str>
+				\\ls <dir>              List files in <dir>. If <dir> is not specified, list files in current directory
+				\\cd <dir>              Change directory to <dir>
+				\\cat <file>            Print contents of <file>
 				\\random <min> <max>    Random number between <min> and <max>
 				\\time                  Print unix time
 				\\date                  Print date
@@ -356,6 +362,83 @@ fn entry() !Request {
 			// try fb.println("Rebooting...", .{});
 			return Request.Reboot;
 			// uefi.system_table.runtime_services.resetSystem(uefi.tables.ResetType.ResetCold, uefi.Status.Success, 0, null);
+		} else if (std.mem.eql(u8, args[0], "cd")) {
+
+			if (args.len == 1) {
+				try fb.println("Invalid usage", .{});
+				continue;
+			}
+
+			fs.set_cwd(args[1]) catch |e| {
+				switch (e) {
+					error.NotFound => {
+						try fb.println("Directory not found", .{});
+					},
+					error.AlreadyAtRoot => {
+						continue;
+					},
+					else => {
+						try fb.println("Error: {s}", .{@errorName(e)});
+					}
+				}
+			};
+
+		} else if (std.mem.eql(u8, args[0], "ls")) {
+
+			const dir_to_list = if (args.len == 1) fs.cwd() else args[1];
+
+			const dir = fs.open_dir(dir_to_list) catch |e| {
+				try fb.println("Error: {s}", .{@errorName(e)});
+				continue;
+			};
+			defer dir.close() catch {
+				fb.println("Error: Could not close directory", .{}) catch {};
+			};
+
+			while (dir.next() catch |e| {
+				try fb.println("Error: Could not read directory: {s}", .{@errorName(e)});
+				continue;
+			}) |dirent| {
+				defer dirent.free();
+				try fb.println("{s}", .{dirent.filename});
+			}
+
+		} else if (std.mem.eql(u8, args[0], "cat")) {
+
+			const file = fs.open_file(args[1], .Read) catch |e| {
+				try fb.println("Error: {s}", .{@errorName(e)});
+				continue;
+			};
+
+			defer file.close() catch {
+				fb.println("Error: Could not close file", .{}) catch {};
+			};
+
+			const data = file.read_all_alloc() catch |e| {
+				try fb.println("Error: {s}", .{@errorName(e)});
+				continue;
+			};
+			defer alloc.free(data);
+
+			for (data, 0..) |c, i| {
+				fb.puts(&[_]u8{ c });
+				if (i % 32 == 0) {
+
+					const key = io.getkey() catch blk: {
+						break :blk null;
+					};
+
+					if (key == null) {
+						continue;
+					}
+
+					if (key.?.unicode.convert() == 'c' and key.?.ctrl) {
+						break;
+					}
+
+				}
+			}
+
 		} else if (std.mem.eql(u8, args[0], "leaks")) {
 			try fb.println("Objects currently allocated on heap: {d}", .{heap.amount});
 		} else if (std.mem.eql(u8, args[0], "echo")) {
