@@ -253,13 +253,14 @@ fn entry() !Request {
 	graphics.clear();
 
 	try fs.init(alloc);
+	defer fs.deinit();
+
 	try fs.mount_root();
 	defer {
 		fs.umount_root() catch |e| {
 			kernel_panic("On root umount: {any}", .{e});
 		};
 	}
-	defer fs.deinit();
 
 	// try fb.load_font(alloc, 8, 16, "vga16");
 
@@ -540,6 +541,10 @@ fn entry() !Request {
 					}
 
 				}
+			}
+
+			if (data[data.len - 1] != '\n') {
+				try fb.print("\n", .{});
 			}
 
 		} else if (std.mem.eql(u8, args[0], "leaks")) {

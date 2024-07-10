@@ -17,10 +17,22 @@ pub const Allocator = struct {
 		return Allocator{};
 	}
 
-	pub fn alloc(_: *const Allocator, comptime T: type, count: usize) ![]T {
+	pub fn alloc(self: *const Allocator, comptime T: type, count: usize) ![]T {
+		// if (count == 0) return &[0]T{};
+		// var memory: [*]align(8) T = undefined;
+		// const res = (try bs.init()).allocatePool(uefi.tables.MemoryType.BootServicesData, count * @sizeOf(T), @ptrCast(&memory));
+		// if (res != uefi.Status.Success) {
+		// 	try res.err();
+		// }
+		// amount += 1;
+		// return memory[0..count];
+		return self.alloc_type(T, count, uefi.tables.MemoryType.BootServicesData);
+	}
+
+	pub fn alloc_type(_: *const Allocator, comptime T: type, count: usize, memory_type: uefi.tables.MemoryType) ![]T {
 		// if (count == 0) return &[0]T{};
 		var memory: [*]align(8) T = undefined;
-		const res = (try bs.init()).allocatePool(uefi.tables.MemoryType.BootServicesData, count * @sizeOf(T), @ptrCast(&memory));
+		const res = (try bs.init()).allocatePool(memory_type, count * @sizeOf(T), @ptrCast(&memory));
 		if (res != uefi.Status.Success) {
 			try res.err();
 		}

@@ -22,6 +22,10 @@ pub fn init() !void {
 		return error.NoNetwork;
 	}
 
+	if (network.?.start() != uefi.Status.Success) {
+		return error.CouldNotStart;
+	}
+
 	log.finish_task();
 
 }

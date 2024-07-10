@@ -297,6 +297,12 @@ pub fn puts(str: []const u8) void {
 			putchar(' ');
 			cursor_pos[0] = 0;
 			continue;
+		} else if (c == '\t') {
+			for (0..4) |_| {
+				putchar(' ');
+				right(1);
+			}
+			continue;
 		}
 		putchar(c);
 		right(1); // cursor_pos[0] += 1;
