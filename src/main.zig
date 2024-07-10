@@ -182,20 +182,25 @@ fn entry() !Request {
 
 	log.new_task("BootServices");
 	_ = bs.init() catch {
-		kernel_panic("Could not start boot services", .{});
+		@panic("Could not start boot services");
 	};
 	log.finish_task();
 
 	const alloc = heap.Allocator.init();
 	log.new_task("InitHeap");
 	for (0..100) |_| {
-		errdefer log.error_task();
-		const a = try alloc.alloc(u8, 1);
+		const a = alloc.alloc(u8, 1) catch |e| {
+			log.error_task();
+			@panic(@errorName(e));
+		};
 		alloc.free(a);
 		try time.sleepms(10);
 	}
 	log.finish_task();
 	// try time.sleepms(250);
+
+	try fb.load_builtin_font(alloc);
+	defer fb.free_font(alloc);
 
 	try graphics.init();
 	const resolutions = try graphics.get_resolutions(alloc);
@@ -236,10 +241,10 @@ fn entry() !Request {
 				}
 			};
 
+			try io.println("Set to {d} x {d}", .{ resolutions[n-1].width, resolutions[n-1].height });
+
 			try graphics.set_videomode(resolutions[n-1]);
 			done = true;
-
-			try io.println("Set to {d} x {d}", .{ resolutions[n-1].width, resolutions[n-1].height });
 		}
 	}
 
@@ -247,13 +252,24 @@ fn entry() !Request {
 
 	graphics.clear();
 
+	try fs.init(alloc);
+	try fs.mount_root();
+	defer {
+		fs.umount_root() catch |e| {
+			kernel_panic("On root umount: {any}", .{e});
+		};
+	}
+	defer fs.deinit();
+
+	// try fb.load_font(alloc, 8, 16, "vga16");
+
 	try rng.init();
-	log.new_task("BootServices");
-	log.finish_task();
-	log.new_task("InitHeap");
-	log.finish_task();
-	log.new_task("GraphicsOutput");
-	log.finish_task();
+	// log.new_task("BootServices");
+	// log.finish_task();
+	// log.new_task("InitHeap");
+	// log.finish_task();
+	// log.new_task("GraphicsOutput");
+	// log.finish_task();
 	// try sleepms(200);
 
 	log.new_task("Watchdog");
@@ -263,10 +279,6 @@ fn entry() !Request {
 	log.finish_task();
 
 	try pointer.init();
-
-	try fs.init(alloc);
-	try fs.mount_root();
-	defer fs.deinit();
 
 	network.init() catch {};
 
@@ -294,7 +306,13 @@ fn entry() !Request {
 		try fb.print(" > ", .{});
 		fb.set_color(fb.White);
 		// try fb.print("> ", .{});
-		const inp = try fb.getline(alloc);
+		const inp = fb.getline(alloc) catch |e| {
+			if (e == error.CtrlC) {
+				continue;
+			} else {
+				return e;
+			}
+		};
 		defer alloc.free(inp);
 
 		const args = parse_string(alloc, inp) catch |e| {
@@ -330,6 +348,7 @@ fn entry() !Request {
 				\\ls <dir>              List files in <dir>. If <dir> is not specified, list files in current directory
 				\\cd <dir>              Change directory to <dir>
 				\\cat <file>            Print contents of <file>
+				\\loadfont <name>       Load font <name>. Available fonts are in `/fonts` (excluding extension).
 				\\random <min> <max>    Random number between <min> and <max>
 				\\time                  Print unix time
 				\\date                  Print date
@@ -349,8 +368,65 @@ fn entry() !Request {
 
 		} else if (std.mem.eql(u8, args[0], "loadfont")) {
 
-			// fb.clear();
-			// try fb.load_font(alloc, 8, 16, args[1]);
+			if (args.len == 1) {
+				try fb.println("Invalid usage", .{});
+				continue;
+			}
+
+			const path = try fb.alloc_print(alloc, "/fonts/{s}.psf", .{args[1]});
+			defer alloc.free(path);
+
+			const file = fs.open_file(path, .Read) catch |e| {
+				if (e == error.NotFound) {
+					try fb.println("Font not found", .{});
+				} else {
+					try fb.println("Error: {s}", .{@errorName(e)});
+				}
+				continue;
+			};
+			file.close() catch {};
+
+			var width: usize = 0;
+			var height: usize = 0;
+
+			if (std.mem.eql(u8, args[1], "vga09")) {
+				width = 8;
+				height = 9;
+			} else if (std.mem.startsWith(u8, args[1], "vga16")) {
+				width = 8;
+				height = 16;
+			} else if (std.mem.startsWith(u8, args[1], "vga18")) {
+				width = 8;
+				height = 18;
+			} else {
+
+				try fb.print("Width: ", .{});
+				const width_line = fb.getline(alloc) catch |e| {
+					if (e == error.CtrlC) {
+						continue;
+					} else {
+						return e;
+					}
+				};
+				defer alloc.free(width_line);
+
+				width = std.fmt.parseInt(usize, width_line, 10) catch 0;
+
+				try fb.print("Height: ", .{});
+				const height_line = fb.getline(alloc) catch |e| {
+					if (e == error.CtrlC) {
+						continue;
+					} else {
+						return e;
+					}
+				};
+				defer alloc.free(height_line);
+
+			}
+
+			fb.clear();
+			fb.free_font(alloc);
+			try fb.load_font(alloc, width, height, args[1]);
 
 		} else if (std.mem.eql(u8, args[0], "clear")) {
 			fb.clear();
@@ -611,6 +687,15 @@ fn kernel_panic_raw(msg: []const u8) noreturn {
 		// var framebuffer_worked = true;
 
 		(blk: {
+
+			if (fb.font_loaded) {
+				fb.free_font(alloc);
+			}
+
+			fb.load_builtin_font(alloc) catch |e| {
+				break :blk e;
+			};
+
 			var framebuffer = graphics.Framebuffer.init(alloc) catch |e| {
 				break :blk e;
 			};
@@ -912,26 +997,22 @@ pub fn main() void {
 		kernel_panic_raw(msg);
 	}
 
-	fs.umount_root() catch |e| {
-		kernel_panic("On root umount: {any}", .{e});
-	};
-
 	switch (req) {
 		Request.Exit => {},
 		Request.Shutdown => {
-			print_either("Reached target shutdown");
+			io.puts("Reached target shutdown");
 			sleepms(1000) catch {};
 			bs.exit_services() catch {
-				print_either("EXIT SERVICES FAILED");
+				io.puts("EXIT SERVICES FAILED");
 				sleepms(5000) catch {};
 			};
 			bs.shutdown();
 		},
 		Request.Reboot => {
-			print_either("Reached target reboot");
+			io.puts("Reached target reboot");
 			sleepms(1000) catch {};
 			bs.exit_services() catch {
-				print_either("EXIT SERVICES FAILED");
+				io.puts("EXIT SERVICES FAILED");
 				sleepms(5000) catch {};
 			};
 			bs.hardware_reboot();

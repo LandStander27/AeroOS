@@ -7,42 +7,45 @@ const fs = @import("fs.zig");
 const graphics = @import("graphics.zig");
 const Color = graphics.Color;
 
-const font_width: u64 = 8;
-const font_height: u64 = 16;
+pub var font_width: u64 = 8;
+pub var font_height: u64 = 16;
 
-pub const font = blk: {
+const vga_font = @embedFile("./assets/vga16.psf");
 
-	@setEvalBranchQuota(100000);
+// pub const font = blk: {
 
-	const data = @embedFile("./assets/vga16.psf")[4..];
-	var ret: [512][16][8]bool = undefined;
+// 	@setEvalBranchQuota(100000);
 
-	for (&ret, 0..) |*char, i| {
-		for (char, 0..) |*row, j| {
-			for (row, 0..) |*pixel, k| {
-				pixel.* = data[i * 16 + j] & 0b10000000 >> k != 0;
-			}
-		}
-	}
+// 	const data = vga_font[4..];
+// 	var ret: [512][16][8]bool = undefined;
 
-	break :blk ret;
+// 	for (&ret, 0..) |*char, i| {
+// 		for (char, 0..) |*row, j| {
+// 			for (row, 0..) |*pixel, k| {
+// 				pixel.* = data[i * 16 + j] & 0b10000000 >> k != 0;
+// 			}
+// 		}
+// 	}
 
-};
+// 	break :blk ret;
 
-// pub var font: [][][]bool = @ptrCast(@constCast(&builtin_font));
+// };
 
-const cursor = blk: {
+pub var font: [512][][]bool = undefined;
+pub var font_loaded = false;
 
-	var ret: [16][8]bool = undefined;
-	for (&ret, 0..) |*row, i| {
-		for (row, 0..) |*pixel, j| {
-			pixel.* = if (i >= 1 and i < ret.len-1 and j == 2) true else false;
-		}
-	}
+// const cursor = blk: {
 
-	break :blk ret;
+// 	var ret: [16][8]bool = undefined;
+// 	for (&ret, 0..) |*row, i| {
+// 		for (row, 0..) |*pixel, j| {
+// 			pixel.* = if (i >= 1 and i < ret.len-1 and j == 2) true else false;
+// 		}
+// 	}
 
-};
+// 	break :blk ret;
+
+// };
 
 const font_padding: u64 = 0;
 
@@ -58,38 +61,76 @@ var current_color = White;
 
 var cursor_pos = [_]u64{0, 0};
 
-// pub fn load_font(alloc: heap.Allocator, width: u64, height: u64, font_name: []const u8) !void {
+pub fn load_builtin_font(alloc: heap.Allocator) !void {
 
-// 	const path = try alloc_print(alloc, "/fonts/{s}.psf", .{font_name});
-// 	defer alloc.free(path);
+	const data = vga_font[4..];
 
-// 	const file = try fs.open_file(path, .Read);
-// 	defer file.close() catch {};
+	var ret: [512][][]bool = undefined;
 
-// 	const all = try file.read_all_alloc();
-// 	defer alloc.free(all);
+	const num: i64 = 0b10000000;
 
-// 	const data = all[4..];
+	for (&ret, 0..) |*char, i| {
+		char.* = try alloc.alloc([]bool, 16);
+		for (char.*, 0..) |*row, j| {
+			row.* = try alloc.alloc(bool, 8);
+			for (row.*, 0..) |*pixel, k| {
+				pixel.* = data[i * 16 + j] & num >> @intCast(k) != 0;
+			}
+		}
+	}
 
-// 	var ret: [512][][]bool = undefined;
+	font = ret;
 
-// 	// var ret: [512][16][8]bool = undefined;
+	font_loaded = true;
+	font_height = 16;
+	font_width = 8;
 
-// 	const num: i64 = 0b10000000;
+}
 
-// 	for (&ret, 0..) |*char, i| {
-// 		char.* = try alloc.alloc([]bool, height);
-// 		for (char.*, 0..) |*row, j| {
-// 			row.* = try alloc.alloc(bool, width);
-// 			for (row.*, 0..) |*pixel, k| {
-// 				pixel.* = data[i * 16 + j] & num >> @intCast(k) != 0;
-// 			}
-// 		}
-// 	}
+pub fn load_font(alloc: heap.Allocator, width: u64, height: u64, font_name: []const u8) !void {
 
-// 	font = ret;
+	const path = try alloc_print(alloc, "/fonts/{s}.psf", .{font_name});
+	defer alloc.free(path);
 
-// }
+	const file = try fs.open_file(path, .Read);
+	defer file.close() catch {};
+
+	const all = try file.read_all_alloc();
+	defer alloc.free(all);
+
+	const data = all[4..];
+
+	var ret: [512][][]bool = undefined;
+
+	const num: i64 = 0b10000000;
+
+	for (&ret, 0..) |*char, i| {
+		char.* = try alloc.alloc([]bool, height);
+		for (char.*, 0..) |*row, j| {
+			row.* = try alloc.alloc(bool, width);
+			for (row.*, 0..) |*pixel, k| {
+				pixel.* = data[i * height + j] & num >> @intCast(k) != 0;
+			}
+		}
+	}
+
+	font = ret;
+
+	font_loaded = true;
+	font_height = height;
+	font_width = width;
+
+}
+
+pub fn free_font(alloc: heap.Allocator) void {
+	font_loaded = false;
+	for (&font) |*char| {
+		for (char.*) |*row| {
+			alloc.free(row.*);
+		}
+		alloc.free(char.*);
+	}
+}
 
 pub fn get_cursor_pos() struct { x: u64, y: u64 } {
 	return .{
@@ -147,16 +188,36 @@ fn to_i32(x: anytype) i32 {
 fn put_cursor() void {
 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
 
-	for (cursor, 0..) |row, i| {
-		for (row, 0..) |pixel, j| {
-			graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) White else Black);
+	for (0..font_height) |i| {
+		for (0..font_width) |j| {
+			if (i >= 1 and i < font_height-1 and j == 2) {
+				graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, White);
+			} else {
+				graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, Black);
+			}
 		}
 	}
+
+	// for (cursor, 0..) |row, i| {
+	// 	for (row, 0..) |pixel, j| {
+	// 		graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) White else Black);
+	// 	}
+	// }
 }
 
 pub fn set_color(color: Color) void {
 	current_color = color;
 }
+
+// fn putchar_builtin(c: u8) void {
+// 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
+
+// 	for (builtin_font[c], 0..) |row, i| {
+// 		for (row, 0..) |pixel, j| {
+// 			graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) current_color else Black);
+// 		}
+// 	}
+// }
 
 fn putchar(c: u8) void {
 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
@@ -167,6 +228,32 @@ fn putchar(c: u8) void {
 		}
 	}
 }
+
+// pub fn puts_builtin(str: []const u8) void {
+// 	for (str) |c| {
+// 		if (c == '\n') {
+// 			putchar_builtin(' ');
+// 			cursor_pos[0] = 0;
+// 			down(1);
+// 			continue;
+// 		} else if (c == 8) {
+// 			if (cursor_pos[0] == 0 and cursor_pos[1] == 0) {
+// 				continue;
+// 			}
+// 			putchar_builtin(' ');
+// 			right(-1);
+// 			put_cursor();
+// 			continue;
+// 		} else if (c == '\r') {
+// 			putchar_builtin(' ');
+// 			cursor_pos[0] = 0;
+// 			continue;
+// 		}
+// 		putchar_builtin(c);
+// 		right(1);
+// 	}
+// 	put_cursor();
+// }
 
 pub fn puts(str: []const u8) void {
 
@@ -307,6 +394,9 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 				len = 0;
 				put_cursor();
 				continue;
+			} else if (key.?.unicode.char == 'c' and key.?.ctrl) {
+				try println("^C", .{});
+				return error.CtrlC;
 			}
 
 			if (len >= buf.len) {

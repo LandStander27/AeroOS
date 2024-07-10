@@ -73,32 +73,32 @@ const Direction = enum {
 
 // };
 
-fn draw_char(frame: *graphics.Framebuffer, c: u8, x: u64, y: u64) void {
-	for (fb.font[c], 0..) |row, i| {
-		for (row, 0..) |pixel, j| {
-			frame.draw_pixel(x+8+j, y+i, if (pixel) Color{ .r = 255, .g = 255, .b = 255 } else Color{ .r = 0, .g = 0, .b = 0 });
-		}
-	}
-}
+// fn draw_char(frame: *graphics.Framebuffer, c: u8, x: u64, y: u64) void {
+// 	for (fb.font[c], 0..) |row, i| {
+// 		for (row, 0..) |pixel, j| {
+// 			frame.draw_pixel(x+fb.font_width+j, y+i, if (pixel) Color{ .r = 255, .g = 255, .b = 255 } else Color{ .r = 0, .g = 0, .b = 0 });
+// 		}
+// 	}
+// }
 
-fn draw_text(frame: *graphics.Framebuffer, text: []const u8, x: u64, y: u64) void {
-	var x2 = x;
-	var y2 = y;
+// fn draw_text(frame: *graphics.Framebuffer, text: []const u8, x: u64, y: u64) void {
+// 	var x2 = x;
+// 	var y2 = y;
 
-	for (text) |c| {
-		draw_char(frame, c, x2, y2);
-		if (c == '\n') {
-			y2 += 16;
-			x2 = x;
-		} else {
-			x2 += 8;
-		}
-	}
-}
+// 	for (text) |c| {
+// 		draw_char(frame, c, x2, y2);
+// 		if (c == '\n') {
+// 			y2 += 16;
+// 			x2 = x;
+// 		} else {
+// 			x2 += fb.font_width;
+// 		}
+// 	}
+// }
 
-fn draw_text_centered(frame: *graphics.Framebuffer, text: []const u8, x: u64, y: u64) void {
-	draw_text(frame, text, x - text.len/2*8, y + 8);
-}
+// fn draw_text_centered(frame: *graphics.Framebuffer, text: []const u8, x: u64, y: u64) void {
+// 	draw_text(frame, text, x - text.len/2*8, y + 8);
+// }
 
 const starting_len = 2;
 
@@ -224,9 +224,9 @@ pub fn start(alloc: heap.Allocator) !void {
 
 		if (dead) {
 			snake.last().?.draw_color(&frame, Color{ .r = 255, .g = 165, .b = 0 });
-			draw_text_centered(&frame, "Oh no! You died!", res.width/2, res.height/2);
-			draw_text_centered(&frame, "Press space to restart", res.width/2, res.height/2+16);
-			draw_text_centered(&frame, "Press escape to exit", res.width/2, res.height/2+32);
+			frame.draw_text_centered("Oh no! You died!", res.width/2, res.height/2, null, null);
+			frame.draw_text_centered("Press space to restart", res.width/2, res.height/2+fb.font_height, null, null);
+			frame.draw_text_centered("Press escape to exit", res.width/2, res.height/2+fb.font_height*2, null, null);
 		}
 
 		try frame.update();

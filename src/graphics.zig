@@ -215,7 +215,7 @@ pub const Framebuffer = struct {
 	pub fn draw_char(self: *Framebuffer, c: u8, x: u64, y: u64, color: ?Color, bg_color: ?Color) void {
 		for (fb.font[c], 0..) |row, i| {
 			for (row, 0..) |pixel, j| {
-				self.draw_pixel(x+8+j, y+i, if (pixel) color orelse Color{ .r = 255, .g = 255, .b = 255 } else bg_color orelse Color{ .r = 0, .g = 0, .b = 0 });
+				self.draw_pixel(x+fb.font_width+j, y+i, if (pixel) color orelse Color{ .r = 255, .g = 255, .b = 255 } else bg_color orelse Color{ .r = 0, .g = 0, .b = 0 });
 			}
 		}
 	}
@@ -227,10 +227,10 @@ pub const Framebuffer = struct {
 		for (text) |c| {
 			self.draw_char(c, x2, y2, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
 			if (c == '\n') {
-				y2 += 16;
+				y2 += fb.font_height;
 				x2 = x;
 			} else {
-				x2 += 8;
+				x2 += fb.font_width;
 			}
 		}
 	}
@@ -241,8 +241,8 @@ pub const Framebuffer = struct {
 		var y2 = y;
 
 		while (each_line.next()) |line| {
-			self.draw_text(line, x - (line.len*8)/2, y2 + 8, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
-			y2 += 16;
+			self.draw_text(line, x - (line.len*fb.font_width)/2, y2 + fb.font_width, color orelse Color{ .r = 255, .g = 255, .b = 255 }, bg_color);
+			y2 += fb.font_height;
 		}
 	}
 
