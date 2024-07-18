@@ -16,7 +16,7 @@ setup:
 	mmd -i bin/EFI/BOOT/boot.img ::files
 	# echo "Hello World!" > bin/files/test.txt
 	# mcopy -i bin/EFI/BOOT/boot.img bin/files/test.txt ::files
-	mcopy -s -i bin/EFI/BOOT/boot.img root/* ::
+	mcopy -o -s -i bin/EFI/BOOT/boot.img root/* ::
 
 docker:
 	docker build -t aerobuilder .
@@ -26,8 +26,8 @@ docker:
 build:
 	zig build -Doptimize=ReleaseSafe --verbose
 	rm bin/EFI/BOOT/bootx64.pdb
-	-mdel -i bin/EFI/BOOT/boot.img ::EFI/BOOT/bootx64.efi
-	mcopy -i bin/EFI/BOOT/boot.img bin/EFI/BOOT/bootx64.efi ::EFI/BOOT
+	#mdel -i bin/EFI/BOOT/boot.img ::EFI/BOOT/bootx64.efi
+	mcopy -o -i bin/EFI/BOOT/boot.img bin/EFI/BOOT/bootx64.efi ::EFI/BOOT
 	$(prog) -o AeroOS.iso -R -J -v -d -N -no-emul-boot -eltorito-platform efi -eltorito-boot EFI/BOOT/boot.img -V "BOOT" -A "Boot" bin
 
 run:

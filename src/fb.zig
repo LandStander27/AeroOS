@@ -190,11 +190,11 @@ fn put_cursor() void {
 
 	for (0..font_height) |i| {
 		for (0..font_width) |j| {
-			if (i >= 1 and i < font_height-1 and j == 2) {
+			if (i >= 1 and i < font_height-1 and (j == 0 or j == 1)) {
 				graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, White);
-			} else {
-				graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, Black);
-			}
+			} // else {
+			// 	graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, Black);
+			// }
 		}
 	}
 
@@ -356,27 +356,96 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 	errdefer alloc.free(buf);
 	var len: usize = 0;
 
+	var pos: usize = 0;
+
 	while (true) {
 		const key = try io.getkey();
 		if (key != null) {
+
+			if (key.?.scancode == 4) {
+
+				if (pos == 0) {
+					continue;
+				} else if (pos != len) {
+					putchar(buf[pos]);
+				} else {
+					putchar(' ');
+				}
+
+				right(-1);
+				pos -= 1;
+				put_cursor();
+				continue;
+			} else if (key.?.scancode == 3) {
+				if (pos == len) {
+					continue;
+				} else {
+					putchar(buf[pos]);
+				}
+
+				right(1);
+				pos += 1;
+				put_cursor();
+				continue;
+			}
 
 			if (key.?.unicode.char == 0) {
 				continue;
 			}
 
 			if (key.?.unicode.char == 13) {
+
+				if (pos != len) {
+					putchar(buf[pos]);
+				} else {
+					putchar(' ');
+				}
+
+				right(@intCast(len-pos));
 				try print("\n", .{});
 				break;
 			} else if (key.?.unicode.char == 8) {
-				if (len != 0) {
-					try print("{c}", .{8});
+
+				if (pos == 0) {
+					continue;
+				}
+
+				if (pos == len) {
+					putchar(' ');
+					right(-1);
+					putchar(' ');
+					put_cursor();
 					len -= 1;
+					pos -= 1;
 					buf[len] = 0;
+				} else {
+
+					right(-1);
+
+					for (pos..len) |i| {
+						buf[i-1] = buf[i];
+						putchar(buf[i-1]);
+						right(1);
+					}
+
+					putchar(' ');
+
+					right(-@as(i64, @intCast(len-pos)));
+
+					put_cursor();
+
+					len -= 1;
+					pos -= 1;
+					buf[len] = 0;
+
 				}
 				continue;
 			}
 
 			if (key.?.unicode.char == 'u' and key.?.ctrl) {
+
+				right(@intCast(len-pos));
+
 				putchar(' ');
 				right(-1); // cursor_pos[0] -= 1;
 				for (0..len) |_| {
@@ -398,6 +467,7 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 				}
 				right(1); // cursor_pos[0] += 1;
 				len = 0;
+				pos = 0;
 				put_cursor();
 				continue;
 			} else if (key.?.unicode.char == 'c' and key.?.ctrl) {
@@ -409,8 +479,31 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 				buf = try alloc.realloc(u8, buf, buf.len*2);
 			}
 
-			buf[len] = key.?.unicode.convert();
+			if (pos == len) {
+				buf[len] = key.?.unicode.convert();
+			} else {
+
+				// for (len-pos..pos) |i| {
+				// 	buf[len-i+1] = buf[len-i];
+				// }
+
+				right(@intCast(len-pos));
+
+				var i = len;
+				while (i >= pos) : (i -= 1) {
+					buf[i] = buf[i-1];
+					putchar(buf[i]);
+					right(-1);
+				}
+
+				right(1);
+
+				buf[pos] = key.?.unicode.convert();
+
+			}
+
 			len += 1;
+			pos += 1;
 			try print("{c}", .{key.?.unicode.convert()});
 		}
 	}
