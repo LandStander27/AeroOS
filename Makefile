@@ -21,6 +21,7 @@ docker:
 	docker build -t aerobuilder .
 	docker run -h aerobuilder --name aerobuilder $(dockerflags) --rm -v .:/mnt aerobuilder
 	docker image rm aerobuilder
+	chmod 644 ./AeroOS.iso
 
 build:
 	zig build -Doptimize=ReleaseSafe --verbose
