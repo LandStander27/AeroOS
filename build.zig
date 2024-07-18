@@ -1,6 +1,6 @@
 const std = @import("std");
 const Target = std.Target;
-const CrossTarget = std.zig.CrossTarget;
+const CrossTarget = std.Target.Query;
 
 pub fn build(b: *std.Build) void {
 	const target = CrossTarget{ .cpu_arch = .x86_64, .os_tag = .uefi, .abi = .msvc };

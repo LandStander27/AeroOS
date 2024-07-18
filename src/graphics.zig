@@ -236,7 +236,7 @@ pub const Framebuffer = struct {
 	}
 
 	pub fn draw_text_centered(self: *Framebuffer, text: []const u8, x: u64, y: u64, color: ?Color, bg_color: ?Color) void {
-		var each_line = std.mem.split(u8, text, "\n");
+		var each_line = std.mem.splitSequence(u8, text, "\n");
 
 		var y2 = y;
 
