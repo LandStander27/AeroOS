@@ -451,18 +451,6 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 				for (0..len) |_| {
 					putchar(' ');
 
-					// if (cursor_pos[0] > 1) {
-					// 	right(-1); // cursor_pos[0] -= 1;
-					// } else {
-					// 	if (cursor_pos[0] != 0) {
-					// 		cursor_pos[0] -= 1;
-					// 		putchar(' ');
-					// 		cursor_pos[0] += 1;
-					// 	}
-					// 	right(-1);
-					// 	// down(-1); // cursor_pos[1] -= 1;
-					// 	cursor_pos[0] = max_column;
-					// }
 					right(-1); // cursor_pos[0] -= 1;
 				}
 				right(1); // cursor_pos[0] += 1;
