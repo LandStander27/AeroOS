@@ -469,7 +469,7 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 
 			if (pos == len) {
 				buf[len] = key.?.unicode.convert();
-			} else {
+			} else if (pos != 0) {
 
 				// for (len-pos..pos) |i| {
 				// 	buf[len-i+1] = buf[len-i];
@@ -485,6 +485,20 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 				}
 
 				right(1);
+
+				buf[pos] = key.?.unicode.convert();
+
+			} else {
+
+				right(@intCast(len));
+
+				for (0..len) |i| {
+					buf[len-i] = buf[len-i-1];
+					putchar(buf[len-i]);
+					right(-1);
+				}
+
+				// right(-1);
 
 				buf[pos] = key.?.unicode.convert();
 
