@@ -387,6 +387,34 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 				pos += 1;
 				put_cursor();
 				continue;
+			} else if (key.?.scancode == 5) {
+
+				if (pos == 0) {
+					continue;
+				} else if (pos != len) {
+					putchar(buf[pos]);
+				} else {
+					putchar(' ');
+				}
+
+				right(-@as(i64, @intCast(pos)));
+				pos = 0;
+				put_cursor();
+				continue;
+
+			} else if (key.?.scancode == 6) {
+
+				if (pos == len) {
+					continue;
+				} else {
+					putchar(buf[pos]);
+				}
+
+				right(@as(i64, @intCast(len-pos)));
+				pos = len;
+				put_cursor();
+				continue;
+
 			}
 
 			if (key.?.unicode.char == 0) {
@@ -497,8 +525,6 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 					putchar(buf[len-i]);
 					right(-1);
 				}
-
-				// right(-1);
 
 				buf[pos] = key.?.unicode.convert();
 

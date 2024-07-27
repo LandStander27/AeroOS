@@ -472,6 +472,17 @@ fn entry() !Request {
 				fb.println("Error: Could not close directory", .{}) catch {};
 			};
 
+			const info = dir.get_info() catch |e| {
+				try fb.println("Error: Could not read directory: {s}", .{@errorName(e)});
+				continue;
+			};
+			defer info.free();
+
+			if (info.filetype != .Directory) {
+				try fb.println("Error: Not a directory", .{});
+				continue;
+			}
+
 			var max_size_len: usize = 0;
 
 			while (dir.next() catch |e| {
@@ -503,6 +514,19 @@ fn entry() !Request {
 				}
 				try fb.println("  {s}", .{dirent.filename});
 				fb.set_color(fb.White);
+
+				{
+					const key = io.getkey() catch blk: {
+						break :blk null;
+					};
+					if (key == null) {
+						continue;
+					}
+					if (key.?.unicode.convert() == 'c' and key.?.ctrl) {
+						break;
+					}
+				}
+
 			}
 
 			try fb.print("\n", .{});

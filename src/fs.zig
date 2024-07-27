@@ -207,9 +207,41 @@ pub const Dir = struct {
 
 	file: *uefi.protocol.File,
 
+	pub fn get_info(self: *const Self) !Info {
+		var size: usize = 64;
+
+		var info_buf: []align(8) u8 = @alignCast(try alloc.alloc(u8, size));
+		defer alloc.free(info_buf);
+
+		var res = self.file.getInfo(&uefi.FileInfo.guid, &size, info_buf.ptr);
+		while (res == uefi.Status.BufferTooSmall) {
+			size *= 2;
+			alloc.free(info_buf);
+
+			info_buf = @alignCast(try alloc.alloc(u8, size));
+
+			res = self.file.getInfo(&uefi.FileInfo.guid, &size, info_buf.ptr);
+
+			if (res != uefi.Status.Success and res != uefi.Status.BufferTooSmall) {
+				try res.err();
+				return error.CouldNotGetInfo;
+			}
+
+		}
+
+		const info: *uefi.FileInfo = @ptrCast(info_buf);
+
+		return .{
+			.size = info.file_size,
+			.filename = try get_filename(info),
+			.filetype = if (info.attribute & uefi.protocol.File.efi_file_directory != 0) .Directory else .File
+		};
+
+	}
+
 	pub fn close(self: *const Self) !void {
 		if (self.file.close() != uefi.Status.Success) {
-			return error.CouldNotCloseFile;
+			return error.CouldNotCloseDir;
 		}
 	}
 
