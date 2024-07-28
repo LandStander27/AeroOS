@@ -367,6 +367,25 @@ fn entry() !Request {
 			const size = std.fmt.parseInt(usize, args[1], 10) catch 0;
 			_ = try alloc.alloc(u8, size);
 
+		} else if (std.mem.eql(u8, args[0], "test")) {
+
+			// const exe = @import("exe.zig");
+
+			// const hdr = exe.load_exe(alloc) catch |e| {
+			// 	try fb.println("Error: {s}", .{@errorName(e)});
+			// 	continue;
+			// };
+
+			// defer alloc.destroy(hdr);
+
+			// try fb.println("hdr: {any}", .{hdr});
+
+			// // const mainfn: *fn() anyerror!void = @ptrFromInt(hdr.e_entry);
+			// // try mainfn();
+
+			// const mainfn: *fn() anyerror!void = @ptrCast(@constCast(&hdr.e_entry));
+			// try mainfn();
+
 		} else if (std.mem.eql(u8, args[0], "loadfont")) {
 
 			if (args.len == 1) {

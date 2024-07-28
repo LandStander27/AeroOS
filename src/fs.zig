@@ -140,6 +140,12 @@ pub const File = struct {
 		}
 	}
 
+	pub fn set_position(self: *const Self, pos: usize) !void {
+		if (self.file.setPosition(pos) != uefi.Status.Success) {
+			return error.CouldNotSetPosition;
+		}
+	}
+
 	pub fn get_info(self: *const Self) !Info {
 		var size: usize = 64;
 
@@ -172,7 +178,7 @@ pub const File = struct {
 
 	}
 
-	pub fn read(self: *const Self, buf: []u8) !usize {
+	pub fn read(self: *const Self, buf: *[]u8) !usize {
 
 		var buf_size = buf.len;
 
@@ -191,10 +197,10 @@ pub const File = struct {
 		const info = try self.get_info();
 		defer info.free();
 
-		const buf = try alloc.alloc(u8, info.size);
+		var buf = try alloc.alloc(u8, info.size);
 		errdefer alloc.free(buf);
 
-		_ = try self.read(buf);
+		_ = try self.read(&buf);
 
 		return buf;
 
