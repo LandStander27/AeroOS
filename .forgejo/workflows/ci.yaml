@@ -15,14 +15,13 @@ jobs:
     container:
       image: alpine:latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install deps
-        run: apk add make docker
-        
+        run: apk add make docker node
+
+      - uses: actions/checkout@v4
       - name: Run docker image
         run: make docker
-    
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
