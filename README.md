@@ -2,7 +2,7 @@
 - OS made from scratch in Zig with EFI support.
 
 #### Note
-- The library I created in order to make this has been turned into an actual library, located here: https://github.com/LandStander27/zig-efi-lib
+- The library I created in order to make this has been turned into an actual library, located here: https://git.kage.sj.strangled.net/Land/zig-efi-lib
 
 ## Usage
 ### Downloading
