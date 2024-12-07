@@ -6,7 +6,7 @@
 
 ## Usage
 ### Downloading
-1. Go to latest build action at [https://git.kage.sj.strangled.net/Land/AeroOS/actions].
+1. Go to latest build action at https://git.kage.sj.strangled.net/Land/AeroOS/actions.
 2. Download the `iso.zip` artifact.
 3. The ISO is contained in the downloaded zip.
 #### Running with QEMU
