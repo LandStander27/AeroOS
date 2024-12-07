@@ -16,7 +16,7 @@ jobs:
       image: archlinux:latest
     steps:
       - name: Install deps
-        run: pacman -Sy make git mtools xorriso dosfstools cdrtools wget
+        run: pacman --noconfirm -Sy make git mtools xorriso dosfstools cdrtools wget
         
       - name: Install Zig
         run: wget https://kage.sj.strangled.net/zigup-bin.pkg.tar.zst && pacman --noconfirm -U zigup-bin.pkg.tar.zst && zigup 0.13.0
