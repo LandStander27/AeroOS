@@ -1,0 +1,31 @@
+name: Build Check
+
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - 'LICENSE'
+
+jobs:
+  build:
+    name: "Build Check"
+    runs-on: docker
+    container:
+      image: alpine:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: apk add make docker
+        
+      - name: Run docker image
+        run: make docker
+    
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iso
+          path: AeroOS.iso
+        
