@@ -16,7 +16,7 @@ jobs:
       image: alpine:latest
     steps:
       - name: Install deps
-        run: apk add make docker node
+        run: apk add make docker nodejs
 
       - uses: actions/checkout@v4
       - name: Run docker image
