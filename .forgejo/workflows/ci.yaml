@@ -13,16 +13,16 @@ jobs:
     name: "Build Check"
     runs-on: docker
     container:
-      image: alpine:latest
+      image: archlinux:latest
     steps:
       - name: Install deps
-        run: apk add make docker nodejs git
+        run: pacman -S make git mtools xorriso dosfstools cdrtools wget
         
-      - run: service docker start
-
-      - uses: actions/checkout@v4
-      - name: Run docker image
-        run: make docker
+      - name: Install Zig
+        run: wget https://kage.sj.strangled.net/zigup-bin.pkg.tar.zst && pacman --noconfirm -U zigup-bin.pkg.tar.zst && zigup 0.13.0
+        
+      - name: Build
+        run: make all
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
