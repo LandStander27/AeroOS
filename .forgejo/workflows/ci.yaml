@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Install deps
         run: apk add make docker nodejs git
+        
+      - run: service docker start
 
       - uses: actions/checkout@v4
       - name: Run docker image
