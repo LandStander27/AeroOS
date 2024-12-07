@@ -28,6 +28,6 @@ jobs:
       - name: Upload artifact
         uses: https://code.forgejo.org/forgejo/upload-artifact@v4
         with:
-          name: iso
+          name: iso.zip
           path: AeroOS.iso
         
