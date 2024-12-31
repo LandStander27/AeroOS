@@ -339,24 +339,25 @@ fn entry() !Request {
 			break;
 		} else if (std.mem.eql(u8, args[0], "help")) {
 			const str =
-				\\exit                  Exit the shell
-				\\help                  Show this help
-				\\clear                 Clear the screen
-				\\shutdown              Shut down
-				\\reboot                Reboot
-				\\leaks                 Show heap allocations
-				\\echo <str>            Print <str>
-				\\ls <dir>              List files in <dir>. If <dir> is not specified, list files in current directory
-				\\cd <dir>              Change directory to <dir>
-				\\cat <file>            Print contents of <file>
-				\\loadfont <name>       Load font <name>. Available fonts are in `/fonts` (excluding extension).
-				\\random <min> <max>    Random number between <min> and <max>
-				\\time                  Print unix time
-				\\date                  Print date
-				\\snake                 Start a builtin snake game
-				\\getkey                Print keypress info
-				\\allocate <size>       Allocate <size> bytes on heap. In other words, artificially creates a memory leak (for debugging)
-				\\panic <str>           Initiate a kernel panic with message <str>
+				\\exit                                         Exit the shell
+				\\help                                         Show this help
+				\\clear                                        Clear the screen
+				\\shutdown                                     Shut down
+				\\reboot                                       Reboot
+				\\leaks                                        Show heap allocations
+				\\echo <str>                                   Print <str>
+				\\ls <dir>                                     List files in <dir>. If <dir> is not specified, list files in current directory
+				\\cd <dir>                                     Change directory to <dir>
+				\\cat <file>                                   Print contents of <file>
+				\\loadfont <name>                              Load font <name>. Available fonts are in `/fonts` (excluding extension).
+				\\random <min> <max>                           Random number between <min> and <max>
+				\\time                                         Print unix time
+				\\date                                         Print date
+				\\snake                                        Start a builtin snake game
+				\\getkey                                       Print keypress info
+				\\allocate <size>                              Allocate <size> bytes on heap. In other words, artificially creates a memory leak (for debugging)
+				\\panic <str>                                  Initiate a kernel panic with message <str>
+				\\resolution [set/get/list] <width> <height>   Manage the resolution
 			;
 			try fb.println("{s}\n", .{str});
 		} else if (std.mem.eql(u8, args[0], "allocate")) {
@@ -442,12 +443,59 @@ fn entry() !Request {
 				};
 				defer alloc.free(height_line);
 
+				height = std.fmt.parseInt(usize, height_line, 10) catch 0;
+				
 			}
 
 			fb.clear();
 			fb.free_font(alloc);
 			try fb.load_font(alloc, width, height, args[1]);
 
+		} else if (std.mem.eql(u8, args[0], "resolution")) {
+			if (args.len == 1 and (args.len != 2 or args.len != 4)) {
+				try fb.println("Invalid usage: resolution {set/get/list} <width> <height>", .{});
+				continue;
+			}
+			
+			if (std.mem.eql(u8, args[1], "get") and args.len == 2) {
+				try fb.println("Current resolution: {d}x{d}", .{ graphics.current_resolution().width, graphics.current_resolution().height });
+			} else if (std.mem.eql(u8, args[1], "set") and args.len == 4) {
+				const list = try graphics.get_resolutions(alloc);
+				defer alloc.free(list);
+				const width = std.fmt.parseInt(u64, args[2], 10) catch |e| {
+					try fb.println("Error: {s}", .{ @errorName(e) });
+					continue;
+				};
+				const height = std.fmt.parseInt(u64, args[3], 10) catch |e| {
+					try fb.println("Error: {s}", .{ @errorName(e) });
+					continue;
+				};
+				var found = false;
+				for (0..list.len) |i| {
+					if (list[i].width == width and list[i].height == height) {
+						found = true;
+						graphics.set_videomode(list[i]) catch |e| {
+							try fb.println("Error: {s}", .{ @errorName(e) });
+							continue;
+						};
+						fb.clear();
+						break;
+					}
+				}
+				if (!found) {
+					try fb.println("Resolution does not exist.", .{});
+					continue;
+				}
+			} else if (std.mem.eql(u8, args[1], "list") and args.len == 2) {
+				const list = try graphics.get_resolutions(alloc);
+				for (0..list.len) |i| {
+					try fb.println("{d}: {d}x{d}", .{i, list[i].width, list[i].height});
+				}
+				defer alloc.free(list);
+			} else {
+				try fb.println("Invalid usage: resolution {set/get/list} <width> <height>", .{});
+				continue;
+			}
 		} else if (std.mem.eql(u8, args[0], "clear")) {
 			fb.clear();
 		} else if (std.mem.eql(u8, args[0], "shutdown")) {
