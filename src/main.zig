@@ -373,8 +373,8 @@ fn entry() !Request {
 			// const exe = @import("exe.zig");
 
 			// const hdr = exe.load_exe(alloc) catch |e| {
-			// 	try fb.println("Error: {s}", .{@errorName(e)});
-			// 	continue;
+			// try fb.println("Error: {s}", .{@errorName(e)});
+			// continue;
 			// };
 
 			// defer alloc.destroy(hdr);
@@ -747,23 +747,23 @@ fn entry() !Request {
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
 	// if (graphics.has_inited()) {
-	// 	const res: bool = blk: {
-	// 		fb.set_color(fb.Red);
-	// 		fb.puts("KERNEL PANIC: ");
-	// 		fb.puts(msg);
-	// 		fb.puts("\n");
-	// 		fb.set_color(fb.White);
-	// 		break :blk false;
-	// 	};
-	// 	if (res) {
-	// 		io.puts("KERNEL PANIC: ");
-	// 		io.puts(msg);
-	// 		io.puts("\n");
-	// 	}
+	// const res: bool = blk: {
+	// fb.set_color(fb.Red);
+	// fb.puts("KERNEL PANIC: ");
+	// fb.puts(msg);
+	// fb.puts("\n");
+	// fb.set_color(fb.White);
+	// break :blk false;
+	// };
+	// if (res) {
+	// io.puts("KERNEL PANIC: ");
+	// io.puts(msg);
+	// io.puts("\n");
+	// }
 	// } else {
-	// 	io.puts("KERNEL PANIC: ");
-	// 	io.puts(msg);
-	// 	io.puts("\n");
+	// io.puts("KERNEL PANIC: ");
+	// io.puts(msg);
+	// io.puts("\n");
 	// }
 
 	// enter_loop();

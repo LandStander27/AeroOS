@@ -12,40 +12,8 @@ pub var font_height: u64 = 16;
 
 const vga_font = @embedFile("./assets/vga16.psf");
 
-// pub const font = blk: {
-
-// 	@setEvalBranchQuota(100000);
-
-// 	const data = vga_font[4..];
-// 	var ret: [512][16][8]bool = undefined;
-
-// 	for (&ret, 0..) |*char, i| {
-// 		for (char, 0..) |*row, j| {
-// 			for (row, 0..) |*pixel, k| {
-// 				pixel.* = data[i * 16 + j] & 0b10000000 >> k != 0;
-// 			}
-// 		}
-// 	}
-
-// 	break :blk ret;
-
-// };
-
 pub var font: [512][][]bool = undefined;
 pub var font_loaded = false;
-
-// const cursor = blk: {
-
-// 	var ret: [16][8]bool = undefined;
-// 	for (&ret, 0..) |*row, i| {
-// 		for (row, 0..) |*pixel, j| {
-// 			pixel.* = if (i >= 1 and i < ret.len-1 and j == 2) true else false;
-// 		}
-// 	}
-
-// 	break :blk ret;
-
-// };
 
 const font_padding: u64 = 0;
 
@@ -192,32 +160,14 @@ fn put_cursor() void {
 		for (0..font_width) |j| {
 			if (i >= 1 and i < font_height-1 and (j == 0 or j == 1)) {
 				graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, White);
-			} // else {
-			// 	graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, Black);
-			// }
+			}
 		}
 	}
-
-	// for (cursor, 0..) |row, i| {
-	// 	for (row, 0..) |pixel, j| {
-	// 		graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) White else Black);
-	// 	}
-	// }
 }
 
 pub fn set_color(color: Color) void {
 	current_color = color;
 }
-
-// fn putchar_builtin(c: u8) void {
-// 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
-
-// 	for (builtin_font[c], 0..) |row, i| {
-// 		for (row, 0..) |pixel, j| {
-// 			graphics.draw_pixel(actual[0]+font_padding+font_width+j, actual[1]+font_padding+i, if (pixel) current_color else Black);
-// 		}
-// 	}
-// }
 
 fn putchar(c: u8) void {
 	const actual = to_coord(cursor_pos[0], cursor_pos[1]);
@@ -228,32 +178,6 @@ fn putchar(c: u8) void {
 		}
 	}
 }
-
-// pub fn puts_builtin(str: []const u8) void {
-// 	for (str) |c| {
-// 		if (c == '\n') {
-// 			putchar_builtin(' ');
-// 			cursor_pos[0] = 0;
-// 			down(1);
-// 			continue;
-// 		} else if (c == 8) {
-// 			if (cursor_pos[0] == 0 and cursor_pos[1] == 0) {
-// 				continue;
-// 			}
-// 			putchar_builtin(' ');
-// 			right(-1);
-// 			put_cursor();
-// 			continue;
-// 		} else if (c == '\r') {
-// 			putchar_builtin(' ');
-// 			cursor_pos[0] = 0;
-// 			continue;
-// 		}
-// 		putchar_builtin(c);
-// 		right(1);
-// 	}
-// 	put_cursor();
-// }
 
 pub fn puts(str: []const u8) void {
 
@@ -271,26 +195,6 @@ pub fn puts(str: []const u8) void {
 			}
 			putchar(' ');
 			right(-1);
-			// if (cursor_pos[0] > 0) {
-			// 	right(-1);
-			// } else {
-			// 	cursor_pos[0] -= 1;
-			// 	putchar(' ');
-			// 	cursor_pos[0] += 1;
-			// 	right(-1);
-			// }
-			// if (cursor_pos[0] > 1) {
-			// 	right(-1); // cursor_pos[0] -= 1;
-			// } else {
-			// 	// if (cursor_pos[0] != 0) {
-			// 	// 	cursor_pos[0] -= 1;
-			// 	// 	putchar(' ');
-			// 	// 	cursor_pos[0] += 1;
-			// 	// }
-			// 	right(-1);
-			// 	// down(-1); // cursor_pos[1] -= 1;
-			// 	cursor_pos[0] = max_column;
-			// }
 			put_cursor();
 			continue;
 		} else if (c == '\r') {
@@ -498,10 +402,6 @@ pub fn getline(alloc: heap.Allocator) ![]u8 {
 			if (pos == len) {
 				buf[len] = key.?.unicode.convert();
 			} else if (pos != 0) {
-
-				// for (len-pos..pos) |i| {
-				// 	buf[len-i+1] = buf[len-i];
-				// }
 
 				right(@intCast(len-pos));
 
